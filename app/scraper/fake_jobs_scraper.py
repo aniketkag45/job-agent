@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 def fetch_jobs():
     url = "https://realpython.github.io/fake-jobs/"
     try:
-        response = requests.get(url)
+        response = requests.get(url,timeout=10)
         response.raise_for_status()  # Raise an error for HTTP errors
     except requests.RequestException as e:
         print(f"Error fetching jobs: {e}")
@@ -34,20 +34,11 @@ def fetch_jobs():
 
     return jobs
 
-def save_jobs_to_json(jobs):
-    file_path = "scripts/jobs.json"
-    with open(file_path,"w",encoding="utf-8") as f:
-        json.dump(jobs, f, ensure_ascii=False, indent=4)
-    
-    print(f"{len(jobs)}Jobs saved to {file_path}")
    
 
 if __name__ == "__main__":
     jobs = fetch_jobs()
-    if jobs:
-        save_jobs_to_json(jobs)
-
-        for job in jobs[:5]:
-            print(job)
+    for job in jobs[:5]:
+     print(job)
 
   
