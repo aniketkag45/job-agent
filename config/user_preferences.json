@@ -1,0 +1,23 @@
+{
+    "preferred_keywords": [
+        "python",
+        "backend",
+        "software",
+        "intern",
+        "junior"
+    ],
+
+    "excluded_keywords": [
+        "senior",
+        "lead",
+        "manager",
+        "director"
+    ],
+
+    "preferred_locations": [
+        "india",
+        "remote"
+    ],
+
+    "remote_only": false
+}
