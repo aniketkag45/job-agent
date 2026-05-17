@@ -109,3 +109,286 @@ def mark_job_as_notified(job_id):
     connection.commit()
     connection.close()
     print(f"Marked job ID {job_id} as notified.")
+
+def fetch_all_jobs_from_db(page = 1, page_size = 10,sort_by = "score", sort_order = "DESC"):
+    offset = (page - 1) * page_size
+    allowed_sort_fields = ["score", "title", "company", "source"]
+    if sort_by not in allowed_sort_fields:
+        sort_by = "score"
+        if sort_order.lower() not in ["ASC", "DESC"]:
+            sort_order = "DESC"
+    connection = get_connection()
+    cursor = connection.cursor()
+    query = f"""
+    SELECT
+        id,
+        title,
+        company,
+        location,
+        apply_link,
+        source,
+        score,
+        is_notified
+
+    FROM jobs
+    ORDER BY {sort_by} {sort_order}
+    LIMIT ? OFFSET ?
+    """
+
+  
+    cursor.execute(query, (page_size, offset))
+
+    rows = cursor.fetchall()
+    connection.close()
+    jobs = []
+    for row in rows:
+        jobs.append({
+            "id": row[0],
+            "title": row[1],
+            "company": row[2],
+            "location": row[3],
+            "apply_link": row[4],
+            "source": row[5],
+            "score": row[6],
+            "is_notified": row[7]
+        })
+    return jobs
+
+def search_jobs(keyword,limit = 20):
+    connection = get_connection()
+    cursor = connection.cursor()
+    search_pattern = f"%{keyword}%"
+    cursor.execute("""
+    SELECT
+
+        id,
+        title,
+        company,
+        location,
+        apply_link,
+        source,
+        score,
+        is_notified
+
+    FROM jobs
+
+    WHERE title LIKE ? OR company LIKE ? 
+
+    ORDER BY score DESC
+    LIMIT ?
+    """, (search_pattern, search_pattern, limit))
+
+    rows = cursor.fetchall()
+    connection.close()
+    jobs = []
+    for row in rows:
+        jobs.append({
+            "id": row[0],
+            "title": row[1],
+            "company": row[2],
+            "location": row[3],
+            "apply_link": row[4],
+            "source": row[5],
+            "score": row[6],
+            "is_notified": row[7]
+        })
+    return jobs
+
+def filter_jobs_by_source(source, page = 1, page_size = 10):
+    offset = (page - 1) * page_size
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute("""
+    SELECT
+
+        id,
+        title,
+        company,
+        location,
+        apply_link,
+        source,
+        score,
+        is_notified
+
+    FROM jobs
+
+    WHERE source = ?
+
+    ORDER BY score DESC
+    LIMIT ? OFFSET ?
+    """, (source, page_size, offset))
+
+    rows = cursor.fetchall()
+    connection.close()
+    jobs = []
+    for row in rows:
+        jobs.append({
+            "id": row[0],
+            "title": row[1],
+            "company": row[2],
+            "location": row[3],
+            "apply_link": row[4],
+            "source": row[5],
+            "score": row[6],
+            "is_notified": row[7]
+        })
+    return jobs
+
+def query_jobs(keyword = None, source = None,min_score = None, page = 1, page_size = 10,sort_by = "score", sort_order = "DESC"):
+    offset = (page - 1) * page_size
+    allowed_sort_fields = ["score", "title", "company", "source"]
+    if sort_by not in allowed_sort_fields:
+        sort_by = "score"
+    if sort_order.lower() not in ["asc", "desc"]:
+        sort_order = "desc"
+
+    connection = get_connection()
+    cursor = connection.cursor()
+    query = """
+    SELECT
+
+        id,
+        title,
+        company,
+        location,
+        apply_link,
+        source,
+        score,
+        is_notified
+
+        FROM jobs
+        WHERE 1=1
+    """
+    params = []
+    if keyword:
+        query += " AND (title LIKE ? OR company LIKE ?)"
+        search_pattern = f"%{keyword}%"
+        params.extend([search_pattern, search_pattern])
+    if source:
+        query += " AND source = ?"
+        params.append(source)
+    if min_score is not None:
+        query += " AND score >= ?"
+        params.append(min_score)    
+    query += f" ORDER BY {sort_by} {sort_order}"
+    query += " LIMIT ? OFFSET ?"
+    params.extend([page_size, offset])
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    connection.close()
+    jobs = []
+    for row in rows:
+        jobs.append({
+            "id": row[0],
+            "title": row[1],
+            "company": row[2],
+            "location": row[3],
+            "apply_link": row[4],
+            "source": row[5],
+            "score": row[6],
+            "is_notified": row[7]
+        })
+    return jobs
+
+def create_job(job_data):
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute("""
+    INSERT INTO jobs (
+
+        title,
+        company,
+        location,
+        apply_link,
+        source,
+        score,
+        is_notified
+
+    ) VALUES (?, ?, ?, ?, ?, ?, 0)
+    """, (
+
+        job_data.title,
+
+        job_data.company,
+
+        job_data.location,
+
+        job_data.apply_link,
+
+        job_data.source,
+
+        job_data.score
+    ))
+
+    connection.commit()
+
+    job_id = cursor.lastrowid
+
+    connection.close()
+
+    return {
+
+        "id": job_id,
+
+        **job_data.dict(),
+
+        "is_notified": 0
+    }
+
+
+def update_job(job_id, job_data):
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute("""
+    UPDATE jobs
+    SET title = ?, company = ?, location = ?, apply_link = ?, source = ?, score = ?
+    WHERE id = ?
+    """, (
+        job_data.title,
+        job_data.company,
+        job_data.location,
+        job_data.apply_link,
+        job_data.source,
+        job_data.score,
+        job_id
+    ))
+
+    connection.commit()
+
+    connection.close()
+
+    return {
+
+        "id": job_id,
+
+        **job_data.dict(),
+
+        "is_notified": 0
+    }
+
+
+def delete_job(job_id):
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute("""
+    DELETE FROM jobs
+
+    WHERE id = ?
+    """, (job_id,))
+
+    connection.commit()
+
+    affected_rows = cursor.rowcount
+
+    connection.close()
+
+    return affected_rows
