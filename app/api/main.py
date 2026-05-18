@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from app.api.routes.jobs import router as jobs_router
 from app.core.exceptions import JobNotFoundException
 from app.core.middleware import log_request_middleware
-
+from app.api.routes.auth import router as auth_router
 
 app = FastAPI()
 app.middleware("http")(log_request_middleware)
@@ -32,3 +32,4 @@ def home():
 
 
 app.include_router(jobs_router)
+app.include_router(auth_router)

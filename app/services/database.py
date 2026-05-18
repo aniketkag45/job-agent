@@ -1,9 +1,11 @@
 import sqlite3
+from app.auth.security import hash_password
 
 DATABASE_PATH = 'database/jobs.db'
 
 def get_connection():
     conn = sqlite3.connect(DATABASE_PATH)
+    conn.row_factory = sqlite3.Row
     return conn
 
 def insert_job(job):
@@ -392,3 +394,89 @@ def delete_job(job_id):
     connection.close()
 
     return affected_rows
+
+def create_user(user_data):
+    connection = get_connection()
+    cursor = connection.cursor()
+    hashed_password = hash_password(user_data.password)
+    try:
+        cursor.execute("""
+        INSERT INTO users (
+            username,
+            email,
+            hashed_password
+        ) VALUES (?, ?, ?)
+        """, (
+            user_data.username,
+            user_data.email,
+            hashed_password
+        ))
+        connection.commit()
+        user_id = cursor.lastrowid
+        return {
+            "id": user_id,
+            "username": user_data.username,
+            "email": user_data.email,
+            "is_verified": 0
+        }
+    except sqlite3.IntegrityError:
+        return None
+    finally:
+        connection.close()
+    
+def get_user_by_email(email : str):
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute("""
+    SELECT *
+    FROM users
+    WHERE email = ?
+    """, (email,))
+    user = cursor.fetchone()
+    connection.close()
+    
+    return user
+
+def save_verification_token(user_id: int, token: str):
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute("""
+    INSERT INTO verification_tokens (user_id, token)
+    VALUES (?, ?)
+    """, (user_id, token))
+    connection.commit()
+    connection.close()
+
+def get_verification_token(token: str):
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute("""
+    SELECT *
+    FROM verification_tokens
+    WHERE token = ?
+    """, (token,))
+    token_record = cursor.fetchone()
+    connection.close()
+    
+    return token_record
+
+def verify_user(user_id: int):
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute("""
+    UPDATE users
+    SET is_verified = 1
+    WHERE id = ?
+    """, (user_id,))
+    connection.commit()
+    connection.close()
+
+def delete_verification_token(token: str):
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute("""
+    DELETE FROM verification_tokens
+    WHERE token = ?
+    """, (token,))
+    connection.commit()
+    connection.close()
