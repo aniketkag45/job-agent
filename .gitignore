@@ -5,4 +5,6 @@ __pycache__/
 storage/
 playground/
 database/jobs.db
+frontend/node_modules/
+frontend/dist/
 

@@ -5,9 +5,17 @@ from app.api.routes.jobs import router as jobs_router
 from app.core.exceptions import JobNotFoundException
 from app.core.middleware import log_request_middleware
 from app.api.routes.auth import router as auth_router
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 app.middleware("http")(log_request_middleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.exception_handler(JobNotFoundException)
 async def job_not_found_exception_handler(request: Request, exc: JobNotFoundException):
