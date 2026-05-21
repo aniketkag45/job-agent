@@ -1,0 +1,137 @@
+import {
+
+  useContext
+
+} from "react"
+
+import DashboardLayout from "../components/dashboard/DashboardLayout"
+
+import JobCard from "../components/jobs/JobCard"
+
+import {
+
+  SavedJobsContext
+
+} from "../context/savedjobscontext"
+
+import {
+
+  BookmarkCheck
+
+} from "lucide-react"
+
+
+function SavedJobsPage() {
+
+  const {
+
+    savedJobs
+
+  } = useContext(SavedJobsContext)
+
+
+  return (
+
+    <DashboardLayout>
+
+
+      {/* Header */}
+
+      <div className="mb-12">
+
+
+        <div className="flex items-center gap-4">
+
+
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center shadow-2xl">
+
+            <BookmarkCheck
+              className="text-black"
+              size={30}
+            />
+
+          </div>
+
+
+          <div>
+
+            <h1 className="text-5xl font-black text-white">
+
+              Saved Jobs
+
+            </h1>
+
+
+            <p className="mt-2 text-gray-400 text-lg">
+
+              Manage and track your bookmarked opportunities.
+
+            </p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      {/* Jobs */}
+
+      {savedJobs.length > 0 ? (
+
+        <div className="grid lg:grid-cols-2 gap-8">
+
+          {savedJobs.map((job, index) => (
+
+            <JobCard
+              key={index}
+              company={job.company}
+              role={job.role}
+              salary={job.salary}
+              location={job.location}
+              type={job.type}
+              match={job.match}
+              skills={job.skills}
+            />
+
+          ))}
+
+        </div>
+
+      ) : (
+
+        <div className="rounded-[40px] border border-white/10 bg-white/5 p-16 text-center">
+
+
+          <div className="w-24 h-24 rounded-3xl bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center mx-auto shadow-2xl">
+
+            <BookmarkCheck
+              className="text-black"
+              size={40}
+            />
+
+          </div>
+
+
+          <h2 className="mt-10 text-4xl font-black text-white">
+
+            No Saved Jobs Yet
+
+          </h2>
+
+
+          <p className="mt-5 text-gray-400 text-lg max-w-2xl mx-auto leading-relaxed">
+
+            Start bookmarking opportunities from the jobs page to build your personalized AI-powered career workspace.
+
+          </p>
+
+        </div>
+
+      )}
+
+    </DashboardLayout>
+  )
+}
+
+export default SavedJobsPage

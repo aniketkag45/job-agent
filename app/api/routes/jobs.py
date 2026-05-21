@@ -134,7 +134,8 @@ def query_jobs_endpoint(
 
     sort_by: str = "score",
 
-    sort_order: str = "desc"
+    sort_order: str = "desc",
+    location: str = None
 ):
 
     jobs = query_jobs(
@@ -151,7 +152,8 @@ def query_jobs_endpoint(
 
         sort_by=sort_by,
 
-        sort_order=sort_order
+        sort_order=sort_order,
+        location=location
     )
 
     return ApiResponse(

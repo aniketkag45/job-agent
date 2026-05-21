@@ -117,8 +117,8 @@ def fetch_all_jobs_from_db(page = 1, page_size = 10,sort_by = "score", sort_orde
     allowed_sort_fields = ["score", "title", "company", "source"]
     if sort_by not in allowed_sort_fields:
         sort_by = "score"
-        if sort_order.lower() not in ["ASC", "DESC"]:
-            sort_order = "DESC"
+    if sort_order.lower() not in ["ASC", "DESC"]:
+        sort_order = "DESC"
     connection = get_connection()
     cursor = connection.cursor()
     query = f"""
@@ -236,13 +236,13 @@ def filter_jobs_by_source(source, page = 1, page_size = 10):
         })
     return jobs
 
-def query_jobs(keyword = None, source = None,min_score = None, page = 1, page_size = 10,sort_by = "score", sort_order = "DESC"):
+def query_jobs(keyword = None, source = None,min_score = None, page = 1, page_size = 10,sort_by = "score", sort_order = "DESC",location = None):
     offset = (page - 1) * page_size
     allowed_sort_fields = ["score", "title", "company", "source"]
     if sort_by not in allowed_sort_fields:
         sort_by = "score"
     if sort_order.lower() not in ["asc", "desc"]:
-        sort_order = "desc"
+        sort_order = "DESC"
 
     connection = get_connection()
     cursor = connection.cursor()
@@ -269,6 +269,9 @@ def query_jobs(keyword = None, source = None,min_score = None, page = 1, page_si
     if source:
         query += " AND source = ?"
         params.append(source)
+    if location:
+        query += " AND location LIKE ?"
+        params.append(f"%{location}%")
     if min_score is not None:
         query += " AND score >= ?"
         params.append(min_score)    
