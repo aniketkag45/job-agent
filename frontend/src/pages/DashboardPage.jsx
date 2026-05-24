@@ -1,4 +1,4 @@
-import { useContext, useEffect } from "react"
+import { useContext, useEffect ,useState} from "react"
 
 import { useNavigate } from "react-router-dom"
 
@@ -29,6 +29,15 @@ function DashboardPage() {
   const { logout } =
   useContext(AuthContext)
 
+  const [overviewData, setOverviewData] =
+  useState(null)
+
+  const [recommendedJobs, setRecommendedJobs] = 
+  useState([])
+
+  const [loading, setLoading] =
+  useState(true)
+
   const navigate = useNavigate()
 
 
@@ -53,6 +62,28 @@ function DashboardPage() {
 
   }, [])
 
+  useEffect(() => {
+    
+    const fetchOverview = async () => {
+      try {
+
+        const response = await api.get("/agent/overview")
+        
+        setOverviewData(response.data.data)
+        const jobsresponse =await api.get("/jobs?page=1&page_size=3")
+        setRecommendedJobs(jobsresponse.data.data)
+      } catch (error) {
+        
+        console.error("Error fetching agent overview:", error)
+      }
+      finally {
+        setLoading(false)
+      }
+    }
+
+    fetchOverview()
+  }, [])
+
 
   const handleLogout = () => {
 
@@ -61,7 +92,24 @@ function DashboardPage() {
     navigate("/login")
   }
 
+if(loading) {
 
+  return (
+    <DashboardLayout>
+
+      <div className="flex items-center justify-center h-64">
+
+        <p className="text-gray-400 text-lg">
+
+          Loading dashboard...
+
+        </p>
+
+      </div>
+
+    </DashboardLayout>
+  )
+}
   return (
 
     <DashboardLayout>
@@ -69,33 +117,57 @@ function DashboardPage() {
 
   {/* Analytics Section */}
 
-  <div className="grid lg:grid-cols-3 gap-8">
+  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-8">
 
 
-    <StatsCard
-      title="Recommended Jobs"
-      value="128"
-      description="AI-matched opportunities based on your profile and skills."
+        <StatsCard
+      title="Total Jobs Collected"
+      value={overviewData?.total_jobs || 0}
+      description="Total opportunities collected by the AI agent."
       icon={BriefcaseBusiness}
       gradient="from-blue-500 to-cyan-400"
     />
 
-
     <StatsCard
-      title="Applications"
-      value="24"
-      description="Track your recent applications and hiring progress."
+      title="Jobs Fetched"
+      value={overviewData?.latest_run?.jobs_fetched || 0}
+      description="Jobs fetched during the latest pipeline execution."
       icon={TrendingUp}
       gradient="from-purple-500 to-pink-400"
     />
 
+    <StatsCard
+      title="Alerts Sent"
+      value={overviewData?.latest_run?.alerts_sent || 0}
+      description="Telegram alerts sent from latest job matches."
+      icon={Bookmark}
+      gradient="from-green-500 to-emerald-400"
+    />
 
     <StatsCard
-      title="Profile Strength"
-      value="92%"
-      description="Your AI profile optimization score is performing strongly."
+      title="Pipeline Status"
+      value={overviewData?.latest_run?.status || "UNKNOWN"}
+      description="Current health status of the automation pipeline."
+      icon={Activity}
+      gradient="from-orange-500 to-yellow-400"
+    />
+
+    <StatsCard
+      title="Execution Time"
+      value={`${Math.round(
+        overviewData?.latest_run?.execution_time_seconds || 0
+      )}s`}
+      description="Latest pipeline execution duration."
+      icon={BrainCircuit}
+      gradient="from-cyan-500 to-blue-500"
+    />
+
+    <StatsCard
+      title="Successful Runs"
+      value={overviewData?.successful_runs || 0}
+      description="Total successful automated pipeline executions."
       icon={Target}
-      gradient="from-green-500 to-emerald-400"
+      gradient="from-pink-500 to-rose-400"
     />
 
   </div>
@@ -142,105 +214,74 @@ function DashboardPage() {
       </div>
 
 
-      <div className="space-y-5">
+      <div className="space-y-6">
 
+  {recommendedJobs.map((job) => (
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 transition">
+    <div
+      key={job.id}
+      className="rounded-3xl border border-white/10 bg-white/5 p-6"
+    >
 
-          <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
 
-            <div>
+        <div>
 
-              <h3 className="text-xl font-bold">
+          <h3 className="text-2xl font-black text-white">
 
-                Frontend Engineer
+            {job.title}
 
-              </h3>
+          </h3>
 
-              <p className="text-gray-400 mt-2">
+          <p className="mt-2 text-cyan-300 font-semibold">
 
-                Google • Remote • ₹28 LPA
+            {job.company}
 
-              </p>
+          </p>
 
-            </div>
+          <p className="mt-3 text-gray-400">
 
+            {job.location}
 
-            <span className="px-4 py-2 rounded-full bg-green-500/20 text-green-300 text-sm font-semibold">
-
-              98% Match
-
-            </span>
-
-          </div>
-
-        </div>
-
-
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 transition">
-
-          <div className="flex items-center justify-between">
-
-            <div>
-
-              <h3 className="text-xl font-bold">
-
-                AI Developer
-
-              </h3>
-
-              <p className="text-gray-400 mt-2">
-
-                Microsoft • Hybrid • ₹35 LPA
-
-              </p>
-
-            </div>
-
-
-            <span className="px-4 py-2 rounded-full bg-cyan-500/20 text-cyan-300 text-sm font-semibold">
-
-              95% Match
-
-            </span>
-
-          </div>
+          </p>
 
         </div>
 
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 transition">
+        <div className="px-4 py-2 rounded-full bg-green-500/20 text-green-300 font-bold">
 
-          <div className="flex items-center justify-between">
-
-            <div>
-
-              <h3 className="text-xl font-bold">
-
-                React Engineer
-
-              </h3>
-
-              <p className="text-gray-400 mt-2">
-
-                Amazon • Bangalore • ₹24 LPA
-
-              </p>
-
-            </div>
-
-
-            <span className="px-4 py-2 rounded-full bg-purple-500/20 text-purple-300 text-sm font-semibold">
-
-              93% Match
-
-            </span>
-
-          </div>
+          {job.score || 0}% Match
 
         </div>
 
       </div>
+
+
+      <div className="mt-6 flex items-center justify-between">
+
+        <span className="text-sm text-gray-500">
+
+          Source: {job.source}
+
+        </span>
+
+
+        <a
+          href={job.apply_link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 text-black font-black hover:scale-105 transition"
+        >
+
+          Apply Now
+
+        </a>
+
+      </div>
+
+    </div>
+  ))}
+</div>
 
     </div>
 

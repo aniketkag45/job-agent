@@ -483,3 +483,83 @@ def delete_verification_token(token: str):
     """, (token,))
     connection.commit()
     connection.close()
+
+def get_agent_overview():
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+
+    # Total jobs count
+
+    cursor.execute("""
+
+    SELECT COUNT(*) AS total_jobs
+
+    FROM jobs
+
+    """)
+
+    total_jobs = cursor.fetchone()["total_jobs"]
+
+
+    # Latest pipeline run
+
+    cursor.execute("""
+
+    SELECT *
+
+    FROM pipeline_runs
+
+    ORDER BY id DESC
+
+    LIMIT 1
+
+    """)
+
+    latest_run = cursor.fetchone()
+
+
+    # Total successful runs
+
+    cursor.execute("""
+
+    SELECT COUNT(*) AS successful_runs
+
+    FROM pipeline_runs
+
+    WHERE status = 'SUCCESS'
+
+    """)
+
+    successful_runs = cursor.fetchone()["successful_runs"]
+
+
+    connection.close()
+
+
+    return {
+
+        "total_jobs": total_jobs,
+
+        "successful_runs": successful_runs,
+
+        "latest_run": {
+
+            "run_started_at": latest_run["run_started_at"],
+
+            "run_completed_at": latest_run["run_completed_at"],
+
+            "jobs_fetched": latest_run["jobs_fetched"],
+
+            "jobs_inserted": latest_run["jobs_inserted"],
+
+            "alerts_sent": latest_run["alerts_sent"],
+
+            "status": latest_run["status"],
+
+            "execution_time_seconds": latest_run["execution_time_seconds"]
+
+        }
+    }
