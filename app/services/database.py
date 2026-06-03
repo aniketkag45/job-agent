@@ -1,5 +1,9 @@
 import sqlite3
 from app.auth.security import hash_password
+from app.services.pipeline_metrics import increment_metric
+from app.services.semantic_representation import (
+    build_semantic_representation
+)
 
 DATABASE_PATH = 'database/jobs.db'
 
@@ -9,34 +13,60 @@ def get_connection():
     return conn
 
 def insert_job(job):
+
     connection = get_connection()
+
     cursor = connection.cursor()
+
     try:
-        cursor.execute('''
+        semantic_text = build_semantic_representation(job)
+
+        cursor.execute(
+            '''
             INSERT INTO jobs (
-                       title, 
-                       company, 
-                       location,
-                        apply_link, 
-                       source,
-                        score
-                       )VALUES (?, ?, ?, ?, ?, ?)
-        ''', (
-             job.get('title'),
-             job.get('company'),
-             job.get('location'),
-             job.get('apply_link'), 
-             job.get('source'),
-             job.get('score')))
+                title,
+                company,
+                location,
+                apply_link,
+                source,
+                score,
+                semantic_text
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''',
+            (
+                job.get('title'),
+                job.get('company'),
+                job.get('location'),
+                job.get('apply_link'),
+                job.get('source'),
+                job.get('score'),
+                semantic_text
+            )
+        )
+
         connection.commit()
-        print(f"Inserted job: "
-              f"{job.get('title')}"
-              )
+
+        print(
+            f"Inserted job: {job.get('title')}"
+        )
+
+        return True
+
+
     except sqlite3.IntegrityError:
-        print(f"Duplicate job skipped: "
-              f"{job.get('title')}"
-              )
+
+        increment_metric(
+            "duplicates_skipped"
+        )
+
+        
+
+        return False
+
+
     finally:
+
         connection.close()
         
 def fetch_jobs(limit = 10):
@@ -143,6 +173,7 @@ def fetch_all_jobs_from_db(page = 1, page_size = 10,sort_by = "score", sort_orde
     rows = cursor.fetchall()
     connection.close()
     jobs = []
+    
     for row in rows:
         jobs.append({
             "id": row[0],
@@ -555,6 +586,12 @@ def get_agent_overview():
 
             "jobs_inserted": latest_run["jobs_inserted"],
 
+            "jobs_filtered": latest_run["jobs_filtered"],
+
+            "duplicates_skipped": latest_run["duplicates_skipped"],
+
+            "scraper_failures": latest_run["scraper_failures"],
+
             "alerts_sent": latest_run["alerts_sent"],
 
             "status": latest_run["status"],
@@ -563,3 +600,100 @@ def get_agent_overview():
 
         }
     }
+
+def fetch_diverse_recommended_jobs(limit=3):
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute("""
+    SELECT
+
+        id,
+        title,
+        company,
+        location,
+        apply_link,
+        source,
+        score,
+        is_notified
+
+    FROM jobs
+
+    ORDER BY score DESC
+    LIMIT 50
+    """)
+
+    rows = cursor.fetchall()
+
+    connection.close()
+
+    jobs = []
+
+    seen_titles = set()
+
+    for row in rows:
+
+        normalized_title = (
+            row[1]
+            .strip()
+            .lower()
+        )
+
+        if normalized_title in seen_titles:
+
+            continue
+
+        seen_titles.add(
+            normalized_title
+        )
+
+        jobs.append({
+
+            "id": row[0],
+
+            "title": row[1],
+
+            "company": row[2],
+
+            "location": row[3],
+
+            "apply_link": row[4],
+
+            "source": row[5],
+
+            "score": row[6],
+
+            "is_notified": row[7]
+        })
+
+        if len(jobs) >= limit:
+
+            break
+
+    return jobs
+
+def job_exists(apply_link):
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute("""
+
+    SELECT id
+
+    FROM jobs
+
+    WHERE apply_link = ?
+
+    LIMIT 1
+
+    """, (apply_link,))
+
+    existing_job = cursor.fetchone()
+
+    connection.close()
+
+    return existing_job is not None

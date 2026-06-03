@@ -14,6 +14,8 @@ from app.services.database import (
     create_job,
 
     update_job,
+
+    fetch_diverse_recommended_jobs
 )
 from app.schemas.job_schema import JobSchema, JobCreateSchema
 from app.schemas.response_schema import ApiResponse
@@ -165,6 +167,24 @@ def query_jobs_endpoint(
         message=f"Found {len(jobs)} jobs matching '{keyword}'"
     )
 
+@router.get("/jobs/recommendations")
+def get_recommended_jobs(
+
+    limit: int = 3
+):
+
+    jobs = fetch_diverse_recommended_jobs(
+        limit=limit
+    )
+
+    return ApiResponse(
+
+        success=True,
+
+        data=jobs,
+
+        message=f"Fetched {len(jobs)} recommended jobs"
+    )
     
 
 @router.post("/jobs", response_model=JobSchema)

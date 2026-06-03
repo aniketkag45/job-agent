@@ -1,4 +1,5 @@
 from playwright.sync_api import sync_playwright
+from app.services.database import job_exists
 
 
 REMOTEOK_URL = (
@@ -35,9 +36,12 @@ def fetch_remoteok_jobs():
             f"job cards"
         )
 
+        consecutive_known_jobs = 0
+
         for card in job_cards:
 
             try:
+                
 
                 title_element = card.query_selector(
                     "h2"
@@ -61,6 +65,13 @@ def fetch_remoteok_jobs():
                     )
                 )
 
+                tag_elements = (
+                    card.query_selector_all(
+                        ".tag"
+                    )
+                )
+
+
                 title = (
                     title_element.inner_text().strip()
                     if title_element
@@ -78,6 +89,11 @@ def fetch_remoteok_jobs():
                     if location_element
                     else "Remote"
                 )
+                tags = []
+                for tag in tag_elements:
+                    tag_text = tag.inner_text().strip()
+                    if tag_text:
+                        tags.append(tag_text)
 
                 apply_link = None
 
@@ -112,8 +128,24 @@ def fetch_remoteok_jobs():
 
                     "apply_link": apply_link,
 
+                    "description": " ".join(tags),
+
                     "source": "RemoteOK"
                 }
+                if job_exists(apply_link):
+                    consecutive_known_jobs += 1
+                    print(
+                        f"Known RemoteOK job detected "
+                        f"({consecutive_known_jobs}/5)"
+                    )
+                    if consecutive_known_jobs >= 5:
+                        print(
+                            "Encountered 5 consecutive known jobs. "
+                            "Stopping early ingestion for RemoteOK."
+                        )
+                        break
+                    continue
+                consecutive_known_jobs = 0
 
                 jobs.append(normalized_job)
 

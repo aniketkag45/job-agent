@@ -18,7 +18,10 @@ import {
   BrainCircuit,
   TrendingUp,
   Activity,
-  Target
+  Target,
+  ShieldAlert,
+Database,
+ServerCrash
 
 } from "lucide-react"
 import StatsCard from "../components/dashboard/StatsCard"
@@ -70,7 +73,8 @@ function DashboardPage() {
         const response = await api.get("/agent/overview")
         
         setOverviewData(response.data.data)
-        const jobsresponse =await api.get("/jobs?page=1&page_size=3")
+        // const jobsresponse =await api.get("/jobs?page=1&page_size=3")
+        const jobsresponse =await api.get("/jobs/recommendations?limit=3")
         setRecommendedJobs(jobsresponse.data.data)
       } catch (error) {
         
@@ -168,6 +172,36 @@ if(loading) {
       description="Total successful automated pipeline executions."
       icon={Target}
       gradient="from-pink-500 to-rose-400"
+    />
+
+        <StatsCard
+      title="Jobs Filtered"
+      value={
+        overviewData?.latest_run?.jobs_filtered || 0
+      }
+      description="Irrelevant jobs rejected by domain intelligence."
+      icon={ShieldAlert}
+      gradient="from-red-500 to-orange-400"
+    />
+
+        <StatsCard
+      title="Duplicates Skipped"
+      value={
+        overviewData?.latest_run?.duplicates_skipped || 0
+      }
+      description="Duplicate jobs prevented from re-entering database."
+      icon={Database}
+      gradient="from-yellow-500 to-amber-400"
+    />
+
+        <StatsCard
+      title="Scraper Failures"
+      value={
+        overviewData?.latest_run?.scraper_failures || 0
+      }
+      description="Sources that failed during latest pipeline execution."
+      icon={ServerCrash}
+      gradient="from-rose-500 to-pink-500"
     />
 
   </div>

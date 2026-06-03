@@ -11,17 +11,26 @@ from app.utils.config_loader import load_user_preferences
 from app.services.database import (
     insert_job,
     fetch_unnotified_jobs,
-    mark_job_as_notified
+    mark_job_as_notified,
+    job_exists
 )
 
 from app.notifier.telegram_notifier import (
     send_telegram_message
 )
 
+from app.services.pipeline_metrics import (
+    increment_metric,
+    reset_metrics,
+    get_metrics
+)
+
 
 def run_pipeline():
 
     start_time = time.time()
+
+    reset_metrics()
 
     run_started_at = datetime.now().isoformat()
 
@@ -59,10 +68,20 @@ def run_pipeline():
         )
 
         for job in jobs:
+            apply_link = job.get("apply_link")
+            if job_exists(apply_link):
+                increment_metric("duplicates_skipped")
+                continue
 
-            insert_job(job)
+            was_inserted = insert_job(job)
 
-            jobs_inserted_count += 1
+            if was_inserted:
+
+                jobs_inserted_count += 1
+
+                increment_metric(
+                    "jobs_inserted"
+                )
 
         print(
             "\nJobs saved to database."
@@ -74,7 +93,13 @@ def run_pipeline():
             f"\nFound {len(unnotified_jobs)} unnotified jobs."
         )
 
-        for job in unnotified_jobs[:5]:
+        top_jobs = sorted(
+            unnotified_jobs,
+            key=lambda x: x.get("score", 0),
+            reverse=True
+        )
+
+        for job in top_jobs[:5]:
 
             message = f"""
 🚀 New Job Found!
@@ -94,9 +119,19 @@ def run_pipeline():
 
             alerts_sent_count += 1
 
-            mark_job_as_notified(job["id"])
+            increment_metric(
+                "alerts_sent"
+            )
 
-        execution_time = time.time() - start_time
+            mark_job_as_notified(
+                job["id"]
+            )
+
+        execution_time = (
+            time.time() - start_time
+        )
+
+        metrics = get_metrics()
 
         connection = sqlite3.connect(
             "database/jobs.db"
@@ -116,6 +151,12 @@ def run_pipeline():
 
             jobs_inserted,
 
+            jobs_filtered,
+
+            duplicates_skipped,
+
+            scraper_failures,
+
             alerts_sent,
 
             status,
@@ -124,7 +165,7 @@ def run_pipeline():
 
         )
 
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 
         """, (
 
@@ -135,6 +176,12 @@ def run_pipeline():
             jobs_fetched_count,
 
             jobs_inserted_count,
+
+            metrics["jobs_filtered"],
+
+            metrics["duplicates_skipped"],
+
+            metrics["scraper_failures"],
 
             alerts_sent_count,
 
@@ -147,13 +194,23 @@ def run_pipeline():
 
         connection.close()
 
+        print("\nPipeline Metrics Summary:\n")
+
+        for key, value in metrics.items():
+
+            print(f"{key}: {value}")
+
         print(
             f"\nPipeline execution completed in {execution_time:.2f} seconds."
         )
 
     except Exception as error:
 
-        execution_time = time.time() - start_time
+        execution_time = (
+            time.time() - start_time
+        )
+
+        metrics = get_metrics()
 
         connection = sqlite3.connect(
             "database/jobs.db"
@@ -173,6 +230,12 @@ def run_pipeline():
 
             jobs_inserted,
 
+            jobs_filtered,
+
+            duplicates_skipped,
+
+            scraper_failures,
+
             alerts_sent,
 
             status,
@@ -183,7 +246,7 @@ def run_pipeline():
 
         )
 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 
         """, (
 
@@ -195,6 +258,12 @@ def run_pipeline():
 
             jobs_inserted_count,
 
+            metrics["jobs_filtered"],
+
+            metrics["duplicates_skipped"],
+
+            metrics["scraper_failures"],
+
             alerts_sent_count,
 
             "FAILED",
@@ -202,7 +271,6 @@ def run_pipeline():
             str(error),
 
             execution_time
-
         ))
 
         connection.commit()
