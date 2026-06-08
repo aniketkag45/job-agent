@@ -25,6 +25,7 @@ ServerCrash
 
 } from "lucide-react"
 import StatsCard from "../components/dashboard/StatsCard"
+import ResumeUpload from "../components/dashboard/ResumeUpload"
 
 
 function DashboardPage() {
@@ -65,20 +66,53 @@ function DashboardPage() {
 
   }, [])
 
-  useEffect(() => {
+  // useEffect(() => {
+    
+  //   const fetchOverview = async () => {
+  //     try {
+
+  //       const response = await api.get("/agent/overview")
+        
+  //       setOverviewData(response.data.data)
+  //       // const jobsresponse =await api.get("/jobs?page=1&page_size=3")
+  //       const jobsresponse =await api.get("/jobs/recommendations?limit=3")
+  //       setRecommendedJobs(jobsresponse.data.data)
+  //     } catch (error) {
+        
+  //       console.error("Error fetching agent overview:", error)
+  //     }
+  //     finally {
+  //       setLoading(false)
+  //     }
+  //   }
+
+  //   fetchOverview()
+  // }, [])
+
+    useEffect(() => {
     
     const fetchOverview = async () => {
       try {
+        
+        const overviewResponse = await api.get("/agent/overview")
+        setOverviewData(overviewResponse.data.data)
 
-        const response = await api.get("/agent/overview")
-        
-        setOverviewData(response.data.data)
-        // const jobsresponse =await api.get("/jobs?page=1&page_size=3")
-        const jobsresponse =await api.get("/jobs/recommendations?limit=3")
-        setRecommendedJobs(jobsresponse.data.data)
+        let jobsResponse
+        try {
+          jobsResponse = await api.get("/jobs/for-me?top_k=3")
+          if (jobsResponse.data && jobsResponse.data.success === false) {
+           
+            jobsResponse = await api.get("/jobs/recommendations?limit=3")
+          }
+        } catch (aiError) {
+          
+          console.log("AI matching unavailable, using generic recommendations:", aiError)
+          jobsResponse = await api.get("/jobs/recommendations?limit=3")
+        }
+
+        setRecommendedJobs(jobsResponse.data.data)
       } catch (error) {
-        
-        console.error("Error fetching agent overview:", error)
+        console.error("Error fetching dashboard data:", error)
       }
       finally {
         setLoading(false)
@@ -206,6 +240,11 @@ if(loading) {
 
   </div>
 
+        {/* Resume Upload */}
+      <div className="mt-10">
+        <ResumeUpload />
+      </div>
+
 
   {/* Main Dashboard Grid */}
 
@@ -284,7 +323,7 @@ if(loading) {
 
         <div className="px-4 py-2 rounded-full bg-green-500/20 text-green-300 font-bold">
 
-          {job.score || 0}% Match
+          {job.hybrid_score ? Math.round(job.hybrid_score * 100) : job.score || 0}% Match
 
         </div>
 

@@ -1,5 +1,6 @@
 from dbm import error
-
+import re
+import html
 import requests
 from app.services.database import job_exists
 
@@ -41,7 +42,7 @@ def fetch_greenhouse_jobs():
 
      try:
 
-            url = f"https://boards-api.greenhouse.io/v1/boards/{company_slug}/jobs"
+            url = f"https://boards-api.greenhouse.io/v1/boards/{company_slug}/jobs?content=true"
 
 
             response = requests.get(
@@ -84,7 +85,7 @@ def fetch_greenhouse_jobs():
                     "apply_link": job.get(
                         "absolute_url"
                     ),
-                    "description": job.get("content",""),
+                    "description": re.sub(r'<[^>]+>', ' ', html.unescape(job.get("content", ""))).strip(),
 
                     "source": "Greenhouse"
                 }

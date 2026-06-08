@@ -8,10 +8,6 @@ import {
 
   MapPin,
 
-  Clock3,
-
-  IndianRupee,
-
   Bookmark,
 
   BookmarkCheck,
@@ -22,22 +18,14 @@ import {
 
 
 function JobCard({
-
   company,
-
   role,
-
-  salary,
-
+  source,        // ← NEW — replaces type
   location,
-
-  type,
-
   match,
-
   skills = [],
-
-  applyLink
+  applyLink,
+  score,          // ← NEW — for color coding
 }) {
 
   const {
@@ -104,10 +92,12 @@ function JobCard({
 
           {/* Match Score */}
 
-          <div className="shrink-0 px-4 py-2 rounded-full bg-green-500/20 text-green-300 text-sm font-bold">
-
+                    <div className={`shrink-0 px-4 py-2 rounded-full text-sm font-bold ${
+            match >= 70 ? "bg-green-500/20 text-green-300" :
+            match >= 40 ? "bg-yellow-500/20 text-yellow-300" :
+            "bg-red-500/20 text-red-300"
+          }`}>
             {match}% Match
-
           </div>
 
         </div>
@@ -115,35 +105,23 @@ function JobCard({
 
         {/* Info */}
 
-        <div className="mt-8 flex flex-wrap gap-5 text-gray-400">
-
-
+                <div className="mt-8 flex flex-wrap gap-5 text-gray-400">
           <div className="flex items-center gap-2">
-
             <MapPin size={18} />
-
             <span>{location}</span>
-
           </div>
-
-
           <div className="flex items-center gap-2">
-
-            <Clock3 size={18} />
-
-            <span>{type}</span>
-
+            <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-xs text-gray-400">
+              {source}
+            </span>
           </div>
-
-
-          <div className="flex items-center gap-2">
-
-            <IndianRupee size={18} />
-
-            <span>{salary}</span>
-
-          </div>
-
+          {score != null && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500">
+                Relevance Score: {score}
+              </span>
+            </div>
+          )}
         </div>
 
 
@@ -217,24 +195,16 @@ function JobCard({
 
             onClick={() =>
               toggleSaveJob({
-
-                company,
-
-                role,
-
-                salary,
-
-                location,
-
-                type,
-
-                match,
-
-                skills,
-
-                applyLink
-              })
-            }
+              company,
+              role,
+              source,
+              location,
+              match,
+              score,
+              skills,
+              applyLink
+            })
+              }
 
             className={`w-16 h-16 rounded-2xl border flex items-center justify-center transition ${
               isSaved

@@ -8,11 +8,32 @@ import {
 
   Search,
 
-  SlidersHorizontal
+  SlidersHorizontal,
+
+  Sparkles
 
 } from "lucide-react"
 
+
+
 import api from "../api/axios"
+
+function extractTechPills(text) {
+  if(!text) return []
+   const TECH_KEYWORDS = [
+    "python", "java", "javascript", "typescript", "react", "node",
+    "fastapi", "flask", "django", "docker", "kubernetes", "aws",
+    "postgresql", "mysql", "mongodb", "redis", "graphql", "rest",
+    "golang", "rust", "kotlin", "swift", "tensorflow", "pytorch",
+    "machine learning", "ai", "llm", "rag", "linux", "terraform"
+  ]
+  
+  const textLower = text.toLowerCase()
+  const found = TECH_KEYWORDS.filter(kw => textLower.includes(kw))
+  
+  // Return first 5, deduplicated
+  return [...new Set(found)].slice(0, 5)
+}
 
 
 function JobsPage() {
@@ -35,6 +56,9 @@ function JobsPage() {
 
   const [currentPage, setCurrentPage] =
   useState(1)
+
+  const [useSemantic, setUseSemantic] = 
+  useState(false)   
 
 
   /* ---------------- FETCH JOBS ---------------- */
@@ -88,37 +112,58 @@ function JobsPage() {
         }
 
 
-        /* Detect Filters */
+        // /* Detect Filters */
 
-        const hasFilters =
+        // const hasFilters =
 
-          searchTerm.trim() ||
+        //   searchTerm.trim() ||
 
-          selectedLocation !== "All"
-
-
-        let response
+        //   selectedLocation !== "All"
 
 
-        /* Query Endpoint */
+        // let response
 
-        if (hasFilters) {
 
-          response = await api.get(
+        // /* Query Endpoint */
 
-            `/jobs/query?${params.toString()}`
-          )
+        // if (hasFilters) {
 
+        //   response = await api.get(
+
+        //     `/jobs/query?${params.toString()}`
+        //   )
+
+        // }
+
+        // /* Default Jobs Endpoint */
+
+        // else {
+
+        //   response = await api.get(
+
+        //     `/jobs?page=${currentPage}&page_size=10`
+        //   )
+        // }
+
+         let response
+
+        if (useSemantic && searchTerm.trim()) {
+          // AI MODE: semantic search
+          const semParams = new URLSearchParams()
+          semParams.append("query", searchTerm)
+          semParams.append("top_k", 10)
+          if (selectedLocation !== "All") {
+            semParams.append("source", selectedLocation)
+          }
+          response = await api.get(`/jobs/semantic-search?${semParams.toString()}`)
         }
-
-        /* Default Jobs Endpoint */
-
+        else if (searchTerm.trim() || selectedLocation !== "All") {
+          // KEYWORD MODE: SQL query
+          response = await api.get(`/jobs/query?${params.toString()}`)
+        }
         else {
-
-          response = await api.get(
-
-            `/jobs?page=${currentPage}&page_size=10`
-          )
+          // DEFAULT: paginated all jobs
+          response = await api.get(`/jobs?page=${currentPage}&page_size=10`)
         }
 
 
@@ -163,7 +208,9 @@ function JobsPage() {
 
     selectedLocation,
 
-    currentPage
+    currentPage,
+
+    useSemantic
   ])
 
 
@@ -335,6 +382,20 @@ function JobsPage() {
           </select>
 
 
+           {/* AI Toggle */}
+          <button
+            onClick={() => setUseSemantic(!useSemantic)}
+            className={`px-4 py-3 rounded-2xl font-bold text-sm transition flex items-center gap-2 ${
+              useSemantic
+                ? "bg-gradient-to-r from-blue-500 to-cyan-400 text-black"
+                : "border border-white/10 bg-white/5 text-gray-400 hover:text-white"
+            }`}
+          >
+            <Sparkles size={18} />
+            AI
+          </button>
+
+
           {/* Filter Button */}
 
           <button className="w-16 h-16 rounded-2xl border border-white/10 bg-white/5 flex items-center justify-center text-gray-300 hover:bg-white/10 transition">
@@ -362,12 +423,12 @@ function JobsPage() {
                 key={job.id}
                 company={job.company}
                 role={job.title}
-                salary={job.salary || "Not Disclosed"}
+                source={job.source}
                 location={job.location}
-                type="Full Time"
-                match={job.score || 0}
-                skills={job.skills || []}
+                match={job.hybrid_score ? Math.round(job.hybrid_score * 100) : (job.similarity ? Math.round(job.similarity * 100) : (job.score || 0))}
+                skills={job.searchable_text ? extractTechPills(job.searchable_text) : (job.tech_stack || [])}
                 applyLink={job.apply_link}
+                score={job.score}
               />
 
             ))}

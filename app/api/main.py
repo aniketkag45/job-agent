@@ -7,6 +7,7 @@ from app.core.middleware import log_request_middleware
 from app.api.routes.auth import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.agent_overview import router as agent_overview_router
+from app.api.routes.resume import router as resume_router
 
 app = FastAPI()
 app.middleware("http")(log_request_middleware)
@@ -43,3 +44,4 @@ def home():
 app.include_router(jobs_router)
 app.include_router(auth_router)
 app.include_router(agent_overview_router)
+app.include_router(resume_router)

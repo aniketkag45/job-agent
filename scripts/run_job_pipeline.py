@@ -22,8 +22,11 @@ from app.notifier.telegram_notifier import (
 from app.services.pipeline_metrics import (
     increment_metric,
     reset_metrics,
-    get_metrics
+    get_metrics 
 )
+
+from app.services.embedding_service import generate_embedding
+from app.services.job_matcher import match_jobs_to_candidate
 
 
 def run_pipeline():
@@ -93,11 +96,46 @@ def run_pipeline():
             f"\nFound {len(unnotified_jobs)} unnotified jobs."
         )
 
-        top_jobs = sorted(
-            unnotified_jobs,
-            key=lambda x: x.get("score", 0),
-            reverse=True
-        )
+        scored_for_alert = []
+        try:
+            import json,os
+            profile_path = os.path.join("storage","candidate_profile.json")
+            if os.path.exists(profile_path):
+                with open(profile_path) as f:
+                    candidate_data = json.load(f)
+
+                candidate_embedding = candidate_data.get("embedding")
+                candidate_skills = candidate_data.get("profile", {}).get("skills", [])
+
+                if candidate_embedding and candidate_skills:
+                     print(f"\n using candidate profile for alert ({len(candidate_skills)} skills)")
+                     matches = match_jobs_to_candidate(
+                          candidate_embedding = candidate_embedding,
+                            candidate_skills = candidate_skills,
+                            top_k = min(len(unnotified_jobs), 50),
+                            semantic_weight = 0.6,
+                     )
+                     hybrid_scores = {match["job_id"]: match["hybrid_score"] for match in matches}
+
+                     for job in unnotified_jobs:
+                          keyword_score = job.get("score", 0)
+                          ai_score = hybrid_scores.get(job["id"], 0)
+                          combined = (keyword_score * 0.5) + (ai_score * 50)
+
+                          scored_for_alert.append((job, combined))
+                else:
+                  raise Exception("No embedding in profile")
+            else:
+              raise Exception("Candidate profile not found for alert scoring")
+        except Exception as e:
+            print(f"\nNo candidate profile for alerts ({e}). Using keyword scores only.")
+            for job in unnotified_jobs:
+                scored_for_alert.append((job, job.get("score", 0)))
+
+        scored_for_alert.sort(key=lambda x: x[1], reverse=True)
+        top_jobs = [job for job, score in scored_for_alert[:5]]
+
+
 
         for job in top_jobs[:5]:
 

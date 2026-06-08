@@ -12,8 +12,65 @@ def get_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-def insert_job(job):
+# def insert_job(job):
 
+#     connection = get_connection()
+
+#     cursor = connection.cursor()
+
+#     try:
+#         semantic_text = build_semantic_representation(job)
+
+#         cursor.execute(
+#             '''
+#             INSERT INTO jobs (
+#                 title,
+#                 company,
+#                 location,
+#                 apply_link,
+#                 source,
+#                 score,
+#                 semantic_text
+#             )
+#             VALUES (?, ?, ?, ?, ?, ?, ?)
+#             ''',
+#             (
+#                 job.get('title'),
+#                 job.get('company'),
+#                 job.get('location'),
+#                 job.get('apply_link'),
+#                 job.get('source'),
+#                 job.get('score'),
+#                 semantic_text
+#             )
+#         )
+
+#         connection.commit()
+        
+
+#         print(
+#             f"Inserted job: {job.get('title')}"
+#         )
+
+#         return True
+
+
+#     except sqlite3.IntegrityError:
+
+#         increment_metric(
+#             "duplicates_skipped"
+#         )
+
+        
+
+#         return False
+
+
+#     finally:
+
+#         connection.close()
+def insert_job(job):
+    
     connection = get_connection()
 
     cursor = connection.cursor()
@@ -46,12 +103,39 @@ def insert_job(job):
         )
 
         connection.commit()
+        job_id = cursor.lastrowid
+
+        
 
         print(
-            f"Inserted job: {job.get('title')}"
+            f"Inserted job: {job.get('title')} (ID: {job_id})"
         )
+        try:
+            from app.services.vector_store import store_job_embedding
+            from app.services.embedding_service import generate_embedding
+            embedding = generate_embedding(semantic_text)
+            store_job_embedding(
+                job_id = job_id,
+                embedding = embedding,
+                metadata = {
+                    "title": job.get("title"),
+                    "company": job.get("company"),
+                    "location": job.get("location"),
+                    "apply_link": job.get("apply_link"),
+                    "source": job.get("source"),
+                    "score": job.get("score"),
+                    "searchable_text": " ".join([
+                        job.get("title", ""),
+                        job.get("description", ""),
+                        " ".join(job.get("tech_stack", []))
+                    ])
+                }
+            )
+        except Exception as e:
+            print(f"Error storing embedding for job ID {job_id}: {e}")
 
-        return True
+
+        return job_id
 
 
     except sqlite3.IntegrityError:
@@ -62,7 +146,7 @@ def insert_job(job):
 
         
 
-        return False
+        return None
 
 
     finally:
@@ -409,15 +493,34 @@ def update_job(job_id, job_data):
     }
 
 
-def delete_job(job_id):
+# def delete_job(job_id):
 
+#     connection = get_connection()
+
+#     cursor = connection.cursor()
+
+#     cursor.execute("""
+#     DELETE FROM jobs
+
+#     WHERE id = ?
+#     """, (job_id,))
+
+#     connection.commit()
+
+#     affected_rows = cursor.rowcount
+
+#     connection.close()
+
+#     return affected_rows
+
+def delete_job(job_id):
+    
     connection = get_connection()
 
     cursor = connection.cursor()
 
     cursor.execute("""
     DELETE FROM jobs
-
     WHERE id = ?
     """, (job_id,))
 
@@ -426,8 +529,14 @@ def delete_job(job_id):
     affected_rows = cursor.rowcount
 
     connection.close()
+    if affected_rows > 0:
+        try:
+            from app.services.vector_store import delete_job_embedding
+            delete_job_embedding(job_id)
+        except Exception as e:
+            print(f"Error deleting embedding for job ID {job_id}: {e}")
 
-    return affected_rows
+    return affected_rows 
 
 def create_user(user_data):
     connection = get_connection()
@@ -697,3 +806,50 @@ def job_exists(apply_link):
     connection.close()
 
     return existing_job is not None
+
+def backfill_job_embeddings(batch_size = 50):
+    from app.services.embedding_service import generate_embedding, generate_embeddings_batch
+    from app.services.vector_store import store_job_embedding
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute("""
+    SELECT id, title, company, location, apply_link, source, score, semantic_text
+    FROM jobs
+                   WHERE semantic_text IS NOT NULL AND semantic_text != ''
+    """)
+    rows = cursor.fetchall()
+    connection.close()
+    total = len(rows)
+    if total == 0:
+        print("No jobs found for backfilling embeddings.")
+        return
+    print(f"Backfilling embeddings for {total} jobs...")
+    embedded = 0
+    for i in range(0, total, batch_size):
+        batch = rows[i:i+batch_size]
+        entries = []
+        for row in batch:
+            entries.append({
+            "job_id": row["id"],
+            "metadata": {
+                "title": row["title"] or "",
+                "company": row["company"] or "",
+                "location": row["location"] or "",
+                "apply_link": row["apply_link"] or "",
+                "source": row["source"] or "",
+                "score": row["score"] or 0
+            },
+            })
+        texts = [row["semantic_text"] for row in batch]
+        embeddings = generate_embeddings_batch(texts)
+        for entry, embedding in zip(entries, embeddings):
+            entry["embedding"] = embedding
+        for entry in entries:
+            store_job_embedding(
+                job_id=entry["job_id"],
+                embedding=entry["embedding"],
+                metadata=entry["metadata"]
+            )
+        embedded += len(batch)
+        print(f"  Embedded {min(i + batch_size, total)}/{total} jobs")
+    print(f"Backfilling complete! Total jobs embedded: {embedded}")

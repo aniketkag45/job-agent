@@ -7,4 +7,5 @@ playground/
 database/jobs.db
 frontend/node_modules/
 frontend/dist/
+storage/
 

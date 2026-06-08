@@ -1,3 +1,4 @@
+import re
 from app.services.pipeline_metrics import increment_metric   
 
 EXCLUDED_DOMAINS = [
@@ -99,6 +100,12 @@ REQUIRED_TECH_SIGNALS = [
 
     "systems engineer",
 
+    "systems administrator",
+    
+    "sysadmin",
+
+
+
 
     # Security
 
@@ -171,8 +178,11 @@ def is_domain_relevant(job):
     # Require strong technical evidence
 
     for signal in REQUIRED_TECH_SIGNALS:
-
-        if signal in title:
+        if len(signal) <=3:
+            if re.search(r'\b' + re.escape(signal) + r'\b', title):
+                return True
+        else:
+         if signal in title:
 
             return True
 
