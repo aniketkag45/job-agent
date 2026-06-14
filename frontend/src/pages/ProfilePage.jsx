@@ -106,47 +106,76 @@ function ProfilePage() {
     })
   }
 
-  function handleSave() {
+ function handleSave() {
     setSaving(true)
     setMessage("")
 
+    // Helper: clean a value for saving
     function clean(val) {
-      if (val === "" || val === undefined || val === null) return null
-      if (Array.isArray(val) && val.length === 0) return null
-      return val
+        if (val === "" || val === undefined || val === null) return null
+        
+        // If it's a JSON string (like "[\"python\"]"), parse it
+        if (typeof val === "string" && (val.startsWith("[") || val.startsWith("{"))) {
+            try { val = JSON.parse(val) } catch(e) {}
+        }
+        
+        if (Array.isArray(val) && val.length === 0) return null
+        return val
     }
 
-    var payload = {
-      full_name: clean(profile.full_name),
-      headline: clean(profile.headline),
-      bio: clean(profile.bio),
-      mobile: clean(profile.mobile),
-      location: clean(profile.location),
-      linkedin_url: clean(profile.linkedin_url),
-      github_url: clean(profile.github_url),
-      portfolio_url: clean(profile.portfolio_url),
-      preferred_keywords: clean(profile.preferred_keywords),
-      excluded_keywords: clean(profile.excluded_keywords),
-      preferred_locations: clean(profile.preferred_locations),
-      remote_only: profile.remote_only || false,
-      education_degree: clean(profile.education_degree),
-      education_field: clean(profile.education_field),
-      education_school: clean(profile.education_school),
-      education_year: clean(profile.education_year)
+    var payload = {}
+
+    // Only include fields that have actual values
+    var fields = {
+        full_name: clean(profile.full_name),
+        headline: clean(profile.headline),
+        bio: clean(profile.bio),
+        mobile: clean(profile.mobile),
+        location: clean(profile.location),
+        linkedin_url: clean(profile.linkedin_url),
+        github_url: clean(profile.github_url),
+        portfolio_url: clean(profile.portfolio_url),
+        preferred_keywords: clean(profile.preferred_keywords),
+        excluded_keywords: clean(profile.excluded_keywords),
+        preferred_locations: clean(profile.preferred_locations),
+        remote_only: profile.remote_only || false,
+        education_degree: clean(profile.education_degree),
+        education_field: clean(profile.education_field),
+        education_school: clean(profile.education_school),
+        education_year: clean(profile.education_year)
+    }
+
+    // Build payload — skip nulls
+    Object.keys(fields).forEach(function (key) {
+        if (fields[key] !== null && fields[key] !== undefined) {
+            payload[key] = fields[key]
+        }
+    })
+
+    if (Object.keys(payload).length === 0) {
+        setMessage("Nothing to save.")
+        setSaving(false)
+        return
     }
 
     api.put("/profile", payload)
-      .then(function () {
-        setMessage("Profile saved successfully!")
-        setSaving(false)
-        setTimeout(function () { setMessage("") }, 3000)
-      })
-      .catch(function (err) {
-        console.error("Save failed:", err)
-        setMessage("Failed to save. " + (err.response && err.response.data && err.response.data.detail ? err.response.data.detail : "Try again."))
-        setSaving(false)
-      })
-  }
+        .then(function () {
+            setMessage("Profile saved successfully!")
+            setSaving(false)
+            setTimeout(function () { setMessage("") }, 3000)
+        })
+        .catch(function (err) {
+            console.error("Save failed:", err)
+            var detail = "Try again."
+            if (err.response && err.response.data && err.response.data.detail) {
+                detail = typeof err.response.data.detail === "string"
+                    ? err.response.data.detail
+                    : JSON.stringify(err.response.data.detail)
+            }
+            setMessage("Failed to save. " + detail)
+            setSaving(false)
+        })
+}
 
   if (loading) {
     return (

@@ -134,10 +134,10 @@ class UserProfile(Base):
      full_name = Column(String(200))
      headline = Column(String(300))
      bio = Column(Text)
-     education_degree: Optional[str] = ""
-     education_field: Optional[str] = ""
-     education_school: Optional[str] = ""
-     education_year: Optional[str] = ""
+     education_degree = Column(String(200))
+     education_field = Column(String(200))
+     education_school = Column(String(300))
+     education_year = Column(String(10))
      profile_photo_url = Column(String(500))
      mobile = Column(String(30))
      location = Column(String(200))
@@ -654,6 +654,8 @@ def update_profile(user_id:int,update_data:dict) -> Optional[dict]:
     db_data = {}
     for key,value in update_data.items():
         if value is None:
+            continue  # Skip None — don't overwrite existing data
+        if isinstance(value, list):
             db_data[key] = json.dumps(value)
         else:
             db_data[key] = value

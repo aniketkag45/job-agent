@@ -6,4 +6,4 @@ conn.commit()
 conn.close()
 from app.services.database import init_db
 init_db()
-print('Done')
+print('user_profiles recreated with real education columns')
