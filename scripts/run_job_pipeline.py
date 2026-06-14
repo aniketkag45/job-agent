@@ -1,4 +1,3 @@
-import sqlite3
 import traceback
 import time
 from datetime import datetime
@@ -171,66 +170,22 @@ def run_pipeline():
 
         metrics = get_metrics()
 
-        connection = sqlite3.connect(
-            "database/jobs.db"
-        )
-
-        cursor = connection.cursor()
-
-        cursor.execute("""
-
-        INSERT INTO pipeline_runs (
-
-            run_started_at,
-
-            run_completed_at,
-
-            jobs_fetched,
-
-            jobs_inserted,
-
-            jobs_filtered,
-
-            duplicates_skipped,
-
-            scraper_failures,
-
-            alerts_sent,
-
-            status,
-
-            execution_time_seconds
-
-        )
-
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-
-        """, (
-
-            run_started_at,
-
-            datetime.now().isoformat(),
-
-            jobs_fetched_count,
-
-            jobs_inserted_count,
-
-            metrics["jobs_filtered"],
-
-            metrics["duplicates_skipped"],
-
-            metrics["scraper_failures"],
-
-            alerts_sent_count,
-
-            "SUCCESS",
-
-            execution_time
-        ))
-
-        connection.commit()
-
-        connection.close()
+        from app.services.database import get_session,PipelineRun
+        with get_session() as session:
+            run = PipelineRun(
+                run_started_at = run_started_at,
+                run_completed_at = datetime.now().isoformat(),
+                jobs_fetched = jobs_fetched_count,
+                jobs_inserted = jobs_inserted_count,
+                jobs_filtered = metrics["jobs_filtered"],
+                duplicates_skipped = metrics["duplicates_skipped"],
+                scraper_failures = metrics["scraper_failures"],
+                alerts_sent = alerts_sent_count,
+                status = "SUCCESS",
+                execution_time_seconds = execution_time,
+                
+            )
+            session.add(run)
 
         print("\nPipeline Metrics Summary:\n")
 
@@ -250,70 +205,22 @@ def run_pipeline():
 
         metrics = get_metrics()
 
-        connection = sqlite3.connect(
-            "database/jobs.db"
-        )
-
-        cursor = connection.cursor()
-
-        cursor.execute("""
-
-        INSERT INTO pipeline_runs (
-
-            run_started_at,
-
-            run_completed_at,
-
-            jobs_fetched,
-
-            jobs_inserted,
-
-            jobs_filtered,
-
-            duplicates_skipped,
-
-            scraper_failures,
-
-            alerts_sent,
-
-            status,
-
-            error_message,
-
-            execution_time_seconds
-
-        )
-
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-
-        """, (
-
-            run_started_at,
-
-            datetime.now().isoformat(),
-
-            jobs_fetched_count,
-
-            jobs_inserted_count,
-
-            metrics["jobs_filtered"],
-
-            metrics["duplicates_skipped"],
-
-            metrics["scraper_failures"],
-
-            alerts_sent_count,
-
-            "FAILED",
-
-            str(error),
-
-            execution_time
-        ))
-
-        connection.commit()
-
-        connection.close()
+        from app.services.database import get_session,PipelineRun
+        with get_session() as session:
+            run = PipelineRun(
+                run_started_at = run_started_at,
+                run_completed_at = datetime.now().isoformat(),
+                jobs_fetched = jobs_fetched_count,
+                jobs_inserted = jobs_inserted_count,
+                jobs_filtered = metrics["jobs_filtered"],
+                duplicates_skipped = metrics["duplicates_skipped"],
+                scraper_failures = metrics["scraper_failures"],
+                alerts_sent = alerts_sent_count,
+                status = "FAILED",
+                error_message = str(error),
+                execution_time_seconds = execution_time
+            )
+            session.add(run)
 
         traceback.print_exc()
 

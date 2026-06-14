@@ -27,11 +27,15 @@ import {
 import api from "../api/axios"
 
 import toast from "react-hot-toast"
+import { useContext } from "react"
+import { AuthContext } from "../context/authContext"
 
 
 function LoginPage() {
 
   const navigate = useNavigate()
+
+  const {login} = useContext(AuthContext)
 
 
   const [formData, setFormData] = useState({
@@ -101,6 +105,7 @@ function LoginPage() {
         "/login",
 
         new URLSearchParams({
+          grant_type: "password",
 
           username: formData.username,
 
@@ -109,12 +114,7 @@ function LoginPage() {
       )
 
 
-      localStorage.setItem(
-
-        "token",
-
-        response.data.access_token
-      )
+      login(response.data.access_token)
 
 
       toast.success("Login successful")

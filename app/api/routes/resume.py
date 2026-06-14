@@ -59,6 +59,26 @@ async def upload_resume(file: UploadFile = File(...), current_user: dict = Depen
         "file_name": file.filename,
     }
     save_profile(full_data)
+    try:
+        from app.services.database import get_session, User , UserResume
+        email = current_user.get("sub")
+        with get_session() as session:
+            user = session.query(User).filter(User.email == email).first()
+            if user:
+                existing = session.query(UserResume).filter(UserResume.user_id == user.id).count()
+                user_resume = UserResume(
+                    user_id = user.id,
+                    filename = file.filename or "resume.pdf",
+                    skills = json.dumps(profile.get("skills", [])),
+                    domains = json.dumps(profile.get("domains", [])),
+                    experience_level = profile.get("experience_level", "Unknown"),
+                    semantic_text = semantic_text,
+                    is_active = existing == 0,  # Set first resume as active by default
+                )
+                session.add(user_resume)
+    except Exception as e:
+        print(f"Error saving resume to database: {str(e)}")
+
     return ApiResponse(
         success = True,
         data = {
@@ -104,5 +124,60 @@ async def delete_profile(current_user: dict = Depends(get_current_user)):
             data = None,
             message = "No candidate profile found to delete."
     )
+
+@router.get("/resumes", response_model=ApiResponse)
+def list_user_resumes(current_user: dict = Depends(get_current_user)):
+    """Get all resumes for the authenticated user."""
+    from app.services.database import get_session, User, UserResume
+    
+    email = current_user.get("sub")
+    with get_session() as session:
+        user = session.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
         
+        resumes = session.query(UserResume).filter(
+            UserResume.user_id == user.id
+        ).order_by(UserResume.uploaded_at.desc()).all()
+        
+        return ApiResponse(
+            success=True,
+            data=[{
+                "id": r.id,
+                "filename": r.filename,
+                "skills": r.skills,
+                "domains": r.domains,
+                "experience_level": r.experience_level,
+                "is_active": r.is_active,
+                "uploaded_at": r.uploaded_at,
+            } for r in resumes],
+            message=f"Found {len(resumes)} resumes."
+        )
+
+
+@router.put("/resume/{resume_id}/activate", response_model=ApiResponse)
+def activate_resume(resume_id: int, current_user: dict = Depends(get_current_user)):
+    """Set a resume as the active one for job matching."""
+    from app.services.database import get_session, User, UserResume
+    
+    email = current_user.get("sub")
+    with get_session() as session:
+        user = session.query(User).filter(User.email == email).first()
+        
+        # Deactivate all user's resumes
+        session.query(UserResume).filter(UserResume.user_id == user.id).update({"is_active": False})
+        # Activate the selected one
+        session.query(UserResume).filter(UserResume.id == resume_id).update({"is_active": True})
+        
+        return ApiResponse(success=True, message="Resume set as active.")
+
+
+@router.delete("/resume/{resume_id}", response_model=ApiResponse)
+def delete_user_resume(resume_id: int, current_user: dict = Depends(get_current_user)):
+    """Delete a resume."""
+    from app.services.database import get_session, UserResume
+    
+    with get_session() as session:
+        session.query(UserResume).filter(UserResume.id == resume_id).delete()
+        return ApiResponse(success=True, message="Resume deleted.") 
 

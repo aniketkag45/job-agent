@@ -174,7 +174,7 @@ def query_jobs_endpoint(
 @router.get("/jobs/recommendations")
 def get_recommended_jobs(
 
-    limit: int = 3
+    limit: int = 3, current_user: dict = Depends(get_current_user)
 ):
 
     jobs = fetch_diverse_recommended_jobs(
@@ -270,16 +270,10 @@ def explain_job_match(job_id: int, current_user: dict = Depends(get_current_user
         )
     candidate_profile = candidate_data.get("profile", {})
     candidate_skills = candidate_data.get("profile", {}).get("skills", [])
-    from app.services.database import get_connection
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT title, company, location, source, score, semantic_text "
-        "FROM jobs WHERE id = ?",
-        (job_id,),
-    )
-    row = cursor.fetchone()
-    conn.close()
+    from app.services.database import get_session,Job
+    with get_session() as session:
+        row = session.query(Job).filter(Job.id == job_id).first()
+   
     if not row:
         return ApiResponse(
             success=False,
@@ -287,10 +281,10 @@ def explain_job_match(job_id: int, current_user: dict = Depends(get_current_user
             message=f"No job found with ID {job_id}"
         )
     job = {
-        "title": row["title"],
-        "company": row["company"],
-        "location": row["location"],
-        "description": row["semantic_text"] or "",
+        "title": row.title,
+        "company": row.company,
+        "location": row.location,
+        "description": row.semantic_text or "",
         "tech_stack": [],  # Assuming tech stack is not stored separately, we can extract
     }
     explanation = None
@@ -333,16 +327,9 @@ def generate_cover_letter(job_id: int,
             message="No resume uploaded. POST to /resume/upload first, then come back."
         )
     candidate_profile = candidate_data.get("profile", {})
-    from app.services.database import get_connection
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT title, company, location, semantic_text "
-        "FROM jobs WHERE id = ?",
-        (job_id,),
-    )
-    row = cursor.fetchone()
-    conn.close()
+    from app.services.database import get_session,Job
+    with get_session() as session:
+        row = session.query(Job).filter(Job.id == job_id).first()
     if not row:
         return ApiResponse(
             success=False,
@@ -350,10 +337,10 @@ def generate_cover_letter(job_id: int,
             message=f"No job found with ID {job_id}"
         )
     job = {
-        "title": row["title"],
-        "company": row["company"],
-        "location": row["location"],
-        "description": row["semantic_text"] or "",
+        "title": row.title,
+        "company": row.company,
+        "location": row.location,
+        "description": row.semantic_text or "",
         "tech_stack": [],  # Assuming tech stack is not stored separately, we can extract
     }
     cover_letter = None

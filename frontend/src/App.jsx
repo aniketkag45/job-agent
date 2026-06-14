@@ -6,6 +6,8 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import JobsPage from './pages/JobsPage';
 import SavedJobsPage from './pages/SavedJobsPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import ProfilePage from './pages/ProfilePage';
 
 
 function App() {
@@ -33,6 +35,12 @@ function App() {
             <SavedJobsPage />
           </ProtectedRoute>
         } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
       </Routes>
     </BrowserRouter>
   )
