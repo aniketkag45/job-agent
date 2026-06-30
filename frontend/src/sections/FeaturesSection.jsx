@@ -1,232 +1,144 @@
-import { motion } from "framer-motion"
-
 import {
-
-  Brain,
-
-  Briefcase,
-
-  Bell,
-
-  SearchCheck,
-
-  Sparkles
-
-} from "lucide-react"
-
+  BrainCircuit,
+  BellRing,
+  FileCheck,
+  Search,
+} from "lucide-react";
 
 const features = [
-
   {
-
-    icon: Brain,
-
-    title:
-    "AI-Powered Matching",
-
+    icon: BrainCircuit,
+    title: "Semantic Matching",
     description:
-    "Receive highly personalized job recommendations intelligently ranked for your profile.",
+      "Our AI understands skills, experience and career intent instead of relying on simple keyword matching.",
+    bg: "bg-card-lavender",
+    accent: "text-accent-purple",
   },
-
   {
-
-    icon: Briefcase,
-
-    title:
-    "Automated Discovery",
-
+    icon: BellRing,
+    title: "Instant Alerts",
     description:
-    "Continuously scan multiple platforms and discover fresh opportunities instantly.",
+      "Get notified the moment relevant opportunities appear so you can apply before everyone else.",
+    bg: "bg-card-peach",
+    accent: "text-accent-orange",
   },
-
   {
-
-    icon: Bell,
-
-    title:
-    "Real-Time Alerts",
-
+    icon: FileCheck,
+    title: "AI Applications",
     description:
-    "Stay updated with instant notifications whenever highly relevant jobs appear.",
+      "Generate tailored application content and cover letters in seconds.",
+    bg: "bg-card-blue",
+    accent: "text-[#3B82F6]",
   },
-
   {
-
-    icon: SearchCheck,
-
-    title:
-    "Smart Tracking",
-
+    icon: Search,
+    title: "Career Discovery",
     description:
-    "Track saved jobs, monitor applications, and organize your career workflow.",
+      "Surface opportunities you would never discover through manual searching.",
+    bg: "bg-card-peach",
+    accent: "text-accent-orange",
   },
-]
-
+];
 
 function FeaturesSection() {
-
   return (
+    <section className="relative bg-[#FAF8F6] py-24 lg:py-32 overflow-hidden">
 
-    <section className="relative overflow-hidden bg-[#050816] py-32 px-6 text-white">
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-accent-purple/5 blur-[140px]" />
 
+      <div className="max-w-[1280px] mx-auto px-8 lg:px-16">
 
-      {/* Background Glow */}
+        {/* Heading */}
 
-      <div className="absolute top-[-150px] left-[15%] w-[400px] h-[400px] bg-blue-500/10 blur-3xl rounded-full"></div>
+        <div className="text-center max-w-3xl mx-auto mb-24">
 
-      <div className="absolute bottom-[-150px] right-[15%] w-[400px] h-[400px] bg-cyan-400/10 blur-3xl rounded-full"></div>
-
-
-      <div className="relative z-10 max-w-7xl mx-auto">
-
-
-        {/* Header */}
-
-        <motion.div
-
-          initial={{
-            opacity: 0,
-            y: 40
-          }}
-
-          whileInView={{
-            opacity: 1,
-            y: 0
-          }}
-
-          transition={{
-            duration: 0.7
-          }}
-
-          viewport={{
-            once: true
-          }}
-
-          className="text-center mb-24"
-        >
-
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-blue-500/20 bg-blue-500/10 text-blue-300 mb-8">
-
-            <Sparkles size={18} />
-
-            Intelligent Platform Features
-
-          </div>
-
-
-          <h2 className="text-5xl lg:text-6xl font-black leading-tight">
-
-            Everything You Need
-
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
-
-              To Accelerate Careers
-
-            </span>
-
-          </h2>
-
-
-          <p className="mt-8 text-xl text-gray-400 leading-relaxed max-w-3xl mx-auto">
-
-            Powerful AI-driven tools designed to simplify job discovery,
-            automate workflows, and improve career decisions.
-
+          <p className="text-xs uppercase tracking-[0.25em] text-accent-orange font-medium mb-6">
+            Why JobAgent
           </p>
 
-        </motion.div>
+          <h2 className="font-serif text-4xl lg:text-5xl text-navy-light leading-[1.08]">
+            Built to make job searching
+            feel effortless.
+          </h2>
 
+          <p className="mt-6 text-body leading-relaxed">
+            Every feature is designed to reduce noise,
+            save time and help you focus on the opportunities
+            that actually matter.
+          </p>
 
-        {/* Feature Grid */}
+        </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {/* Alternating Features */}
+
+        <div className="space-y-10">
 
           {features.map((feature, index) => {
 
-            const Icon =
-            feature.icon
+            const reverse = index % 2 !== 0;
 
             return (
-
-              <motion.div
-
+              <div
                 key={index}
-
-                initial={{
-                  opacity: 0,
-                  y: 50
-                }}
-
-                whileInView={{
-                  opacity: 1,
-                  y: 0
-                }}
-
-                transition={{
-                  duration: 0.6,
-                  delay: index * 0.15
-                }}
-
-                viewport={{
-                  once: true
-                }}
-
-                whileHover={{
-                  y: -12,
-                  scale: 1.02
-                }}
-
-                className="group relative overflow-hidden rounded-[32px] border border-white/10 bg-white/5 backdrop-blur-xl p-8 shadow-2xl"
+                className={`grid lg:grid-cols-2 gap-8 items-center ${
+                  reverse ? "lg:[&>*:first-child]:order-2" : ""
+                }`}
               >
 
+                {/* Visual Card */}
 
-                {/* Hover Glow */}
+                <div
+                  className={`${feature.bg}
+                  rounded-[24px]
+                  border border-navy/5
+                  shadow-[0_8px_30px_rgba(0,0,0,.03)]
+                  p-8 lg:p-10`}
+                >
 
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-500 bg-gradient-to-br from-blue-500/10 to-cyan-400/10"></div>
+                  <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center mb-8">
 
+                    <feature.icon
+                      size={20}
+                      className={feature.accent}
+                    />
 
-                {/* Icon */}
+                  </div>
 
-                <div className="relative z-10 w-16 h-16 rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center mb-8 shadow-xl">
+                  <div className="h-[160px] flex items-center justify-center">
 
-                  <Icon size={30} />
+                    <p className={`font-serif text-5xl ${feature.accent}`}>
+                      0{index + 1}
+                    </p>
+
+                  </div>
 
                 </div>
 
-
                 {/* Content */}
 
-                <div className="relative z-10">
+                <div className="max-w-lg">
 
-                  <h3 className="text-2xl font-bold">
-
+                  <h3 className="font-serif text-3xl text-navy-light">
                     {feature.title}
-
                   </h3>
 
-
-                  <p className="mt-5 text-gray-400 leading-relaxed">
-
+                  <p className="mt-5 text-body leading-[1.9]">
                     {feature.description}
-
                   </p>
 
                 </div>
 
-
-                {/* Decorative Blur */}
-
-                <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full"></div>
-
-              </motion.div>
-            )
+              </div>
+            );
           })}
+
         </div>
 
       </div>
 
     </section>
-  )
+  );
 }
 
-export default FeaturesSection
+export default FeaturesSection;
+

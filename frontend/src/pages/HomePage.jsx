@@ -1,6 +1,6 @@
-import Navbar from "../sections/Navbar";
 import HeroSection from "../sections/HeroSection";
-import AIShowcaseSection from "../sections/AIShowcaseSection";
+// import AIShowcaseSection from "../sections/AIShowcaseSection";
+import TrustedSection from "../sections/TrustedSection";
 import FeaturesSection from "../sections/FeaturesSection";
 import WorkflowSection from "../sections/WorkflowSection";
 import CTASection from "../sections/CTASection";
@@ -9,9 +9,9 @@ import Footer from "../sections/Footer";
 function HomePage() {
   return (
     <div >
-      <Navbar />
       <HeroSection />
-      <AIShowcaseSection />
+      {/* <AIShowcaseSection /> */}
+      <TrustedSection />
       <FeaturesSection />
       <WorkflowSection />
       <CTASection />
