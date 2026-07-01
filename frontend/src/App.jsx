@@ -17,7 +17,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-surface-50">
+      <div className="min-h-screen bg-cream">
         <Navbar isAuthenticated={isAuthenticated} onLogout={logout} />
         <Routes>
           <Route path="/" element={<HomePage />} />

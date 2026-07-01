@@ -1,467 +1,120 @@
-import { useContext, useEffect ,useState} from "react"
 
-import { useNavigate } from "react-router-dom"
-
-import { AuthContext } from "../context/authContext"
-
-import DashboardLayout from "../components/dashboard/DashboardLayout"
+import { useEffect, useState } from "react"
 
 import api from "../api/axios"
-
-import {
-
-
-  BriefcaseBusiness,
-
-  Bookmark,
-
-  BrainCircuit,
-  TrendingUp,
-  Activity,
-  Target,
-  ShieldAlert,
-Database,
-ServerCrash
-
-} from "lucide-react"
-import StatsCard from "../components/dashboard/StatsCard"
-import ResumeUpload from "../components/dashboard/ResumeUpload"
-
+import { BriefcaseBusiness, TrendingUp, BellRing, Activity, BrainCircuit, Target } from "lucide-react"
+// import ResumeUpload from "../components/dashboard/ResumeUpload"
 
 function DashboardPage() {
-
-  const { logout } =
-  useContext(AuthContext)
-
-  const [overviewData, setOverviewData] =
-  useState(null)
-
-  const [recommendedJobs, setRecommendedJobs] = 
-  useState([])
-
-  const [loading, setLoading] =
-  useState(true)
-
-  const navigate = useNavigate()
-
-
+  const [overviewData, setOverviewData] = useState(null)
+  const [recommendedJobs, setRecommendedJobs] = useState([])
+  const [loading, setLoading] = useState(true)
+  
   useEffect(() => {
-
-    const fetchUser = async () => {
-
+    async function fetchData() {
       try {
+        const overview = await api.get("/agent/overview")
+        setOverviewData(overview.data.data)
 
-        const response =
-        await api.get("/me")
-
-        console.log(response.data)
-
-      } catch (error) {
-
-        console.log(error)
-      }
-    }
-
-    fetchUser()
-
-  }, [])
-
-  // useEffect(() => {
-    
-  //   const fetchOverview = async () => {
-  //     try {
-
-  //       const response = await api.get("/agent/overview")
-        
-  //       setOverviewData(response.data.data)
-  //       // const jobsresponse =await api.get("/jobs?page=1&page_size=3")
-  //       const jobsresponse =await api.get("/jobs/recommendations?limit=3")
-  //       setRecommendedJobs(jobsresponse.data.data)
-  //     } catch (error) {
-        
-  //       console.error("Error fetching agent overview:", error)
-  //     }
-  //     finally {
-  //       setLoading(false)
-  //     }
-  //   }
-
-  //   fetchOverview()
-  // }, [])
-
-    useEffect(() => {
-    
-    const fetchOverview = async () => {
-      try {
-        
-        const overviewResponse = await api.get("/agent/overview")
-        setOverviewData(overviewResponse.data.data)
-
-        let jobsResponse
+        let jobsRes
         try {
-          jobsResponse = await api.get("/jobs/for-me?top_k=3")
-          if (jobsResponse.data && jobsResponse.data.success === false) {
-           
-            jobsResponse = await api.get("/jobs/recommendations?limit=3")
+          jobsRes = await api.get("/jobs/for-me?top_k=3")
+          if (jobsRes.data && jobsRes.data.success === false) {
+            jobsRes = await api.get("/jobs/recommendations?limit=3")
           }
-        } catch (aiError) {
-          
-          console.log("AI matching unavailable, using generic recommendations:", aiError)
-          jobsResponse = await api.get("/jobs/recommendations?limit=3")
+        } catch {
+          jobsRes = await api.get("/jobs/recommendations?limit=3")
         }
-
-        setRecommendedJobs(jobsResponse.data.data)
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error)
-      }
-      finally {
+        setRecommendedJobs(jobsRes.data.data)
+      } catch (err) {
+        console.error("Error fetching dashboard:", err)
+      } finally {
         setLoading(false)
       }
     }
-
-    fetchOverview()
+    fetchData()
   }, [])
 
-
-  const handleLogout = () => {
-
-    logout()
-
-    navigate("/login")
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-navy border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    )
   }
 
-if(loading) {
-
   return (
-    <DashboardLayout>
+    <div className="bg-cream min-h-screen">
+      <div className="max-w-[1280px] mx-auto px-8 lg:px-16 py-12">
+        
+        {/* Page Header */}
+        <div className="mb-12">
+          <p className="text-xs font-medium tracking-[0.25em] uppercase text-accent-orange mb-4">Dashboard</p>
+          <h1 className="font-serif text-4xl lg:text-5xl text-navy-light">Good morning.</h1>
+          <p className="mt-3 text-body text-lg">Here's what's happening with your job search.</p>
+        </div>
 
-      <div className="flex items-center justify-center h-64">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
+          <StatCard icon={BriefcaseBusiness} color="bg-card-lavender" accent="text-accent-purple" label="Total Jobs Collected" value={overviewData?.total_jobs || 0} />
+          <StatCard icon={TrendingUp} color="bg-card-blue" accent="text-[#3B82F6]" label="Jobs Fetched (Latest)" value={overviewData?.latest_run?.jobs_fetched || 0} />
+          <StatCard icon={BellRing} color="bg-card-peach" accent="text-accent-orange" label="Alerts Sent" value={overviewData?.latest_run?.alerts_sent || 0} />
+          <StatCard icon={Activity} color="bg-card-lavender" accent="text-accent-purple" label="Pipeline Status" value={overviewData?.latest_run?.status || "N/A"} />
+          <StatCard icon={Target} color="bg-card-blue" accent="text-[#3B82F6]" label="Successful Runs" value={overviewData?.successful_runs || 0} />
+          <StatCard icon={BrainCircuit} color="bg-card-peach" accent="text-accent-orange" label="Execution Time" value={`${Math.round(overviewData?.latest_run?.execution_time_seconds || 0)}s`} />
+        </div>
 
-        <p className="text-gray-400 text-lg">
+        {/* Resume Upload
+        <div className="mb-12">
+          <ResumeUpload />
+        </div> */}
 
-          Loading dashboard...
+        {/* AI Recommendations */}
+        <div className="bg-white rounded-3xl border border-border p-8 shadow-[0_10px_40px_rgba(0,0,0,.03)]">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="font-serif text-2xl text-navy-light">AI Recommendations</h2>
+              <p className="text-body mt-1">Curated for your profile</p>
+            </div>
+            <BrainCircuit size={22} className="text-accent-purple" />
+          </div>
 
-        </p>
-
+          {recommendedJobs.length > 0 ? (
+            <div className="space-y-4">
+              {recommendedJobs.map((job) => (
+                <div key={job.id} className="flex items-center justify-between p-5 rounded-2xl border border-border hover:border-accent-orange/30 hover:bg-cream/50 transition-all">
+                  <div>
+                    <h3 className="font-semibold text-navy">{job.title}</h3>
+                    <p className="text-sm text-body mt-0.5">{job.company} · {job.location}</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-medium text-body">{job.source}</span>
+                    <a href={job.apply_link} target="_blank" rel="noopener noreferrer"
+                      className="px-4 py-2 bg-navy hover:bg-navy-light text-white text-sm font-medium rounded-full transition-colors">
+                      Apply
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-body text-center py-8">No recommendations yet. Upload your resume to get started.</p>
+          )}
+        </div>
       </div>
-
-    </DashboardLayout>
+    </div>
   )
 }
+
+function StatCard({ icon: Icon, color, accent, label, value }) {
   return (
-
-    <DashboardLayout>
-
-
-  {/* Analytics Section */}
-
-  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-8">
-
-
-        <StatsCard
-      title="Total Jobs Collected"
-      value={overviewData?.total_jobs || 0}
-      description="Total opportunities collected by the AI agent."
-      icon={BriefcaseBusiness}
-      gradient="from-blue-500 to-cyan-400"
-    />
-
-    <StatsCard
-      title="Jobs Fetched"
-      value={overviewData?.latest_run?.jobs_fetched || 0}
-      description="Jobs fetched during the latest pipeline execution."
-      icon={TrendingUp}
-      gradient="from-purple-500 to-pink-400"
-    />
-
-    <StatsCard
-      title="Alerts Sent"
-      value={overviewData?.latest_run?.alerts_sent || 0}
-      description="Telegram alerts sent from latest job matches."
-      icon={Bookmark}
-      gradient="from-green-500 to-emerald-400"
-    />
-
-    <StatsCard
-      title="Pipeline Status"
-      value={overviewData?.latest_run?.status || "UNKNOWN"}
-      description="Current health status of the automation pipeline."
-      icon={Activity}
-      gradient="from-orange-500 to-yellow-400"
-    />
-
-    <StatsCard
-      title="Execution Time"
-      value={`${Math.round(
-        overviewData?.latest_run?.execution_time_seconds || 0
-      )}s`}
-      description="Latest pipeline execution duration."
-      icon={BrainCircuit}
-      gradient="from-cyan-500 to-blue-500"
-    />
-
-    <StatsCard
-      title="Successful Runs"
-      value={overviewData?.successful_runs || 0}
-      description="Total successful automated pipeline executions."
-      icon={Target}
-      gradient="from-pink-500 to-rose-400"
-    />
-
-        <StatsCard
-      title="Jobs Filtered"
-      value={
-        overviewData?.latest_run?.jobs_filtered || 0
-      }
-      description="Irrelevant jobs rejected by domain intelligence."
-      icon={ShieldAlert}
-      gradient="from-red-500 to-orange-400"
-    />
-
-        <StatsCard
-      title="Duplicates Skipped"
-      value={
-        overviewData?.latest_run?.duplicates_skipped || 0
-      }
-      description="Duplicate jobs prevented from re-entering database."
-      icon={Database}
-      gradient="from-yellow-500 to-amber-400"
-    />
-
-        <StatsCard
-      title="Scraper Failures"
-      value={
-        overviewData?.latest_run?.scraper_failures || 0
-      }
-      description="Sources that failed during latest pipeline execution."
-      icon={ServerCrash}
-      gradient="from-rose-500 to-pink-500"
-    />
-
-  </div>
-
-        {/* Resume Upload */}
-      <div className="mt-10">
-        <ResumeUpload />
+    <div className="bg-white rounded-2xl border border-border p-6 hover:shadow-[0_10px_40px_rgba(0,0,0,.04)] transition-all">
+      <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center mb-4`}>
+        <Icon size={18} className={accent} />
       </div>
-
-
-  {/* Main Dashboard Grid */}
-
-  <div className="mt-10 grid lg:grid-cols-3 gap-8">
-
-
-    {/* AI Recommendations */}
-
-    <div className="lg:col-span-2 rounded-3xl border border-white/10 bg-white/5 p-8 text-white">
-
-
-      <div className="flex items-center justify-between mb-8">
-
-        <div>
-
-          <h2 className="text-3xl font-black">
-
-            AI Recommendations
-
-          </h2>
-
-          <p className="text-gray-400 mt-2">
-
-            Intelligent opportunities curated for your profile.
-
-          </p>
-
-        </div>
-
-
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center">
-
-          <BrainCircuit
-            className="text-black"
-            size={30}
-          />
-
-        </div>
-
-      </div>
-
-
-      <div className="space-y-6">
-
-  {recommendedJobs.map((job) => (
-
-    <div
-      key={job.id}
-      className="rounded-3xl border border-white/10 bg-white/5 p-6"
-    >
-
-      <div className="flex items-start justify-between gap-4">
-
-        <div>
-
-          <h3 className="text-2xl font-black text-white">
-
-            {job.title}
-
-          </h3>
-
-          <p className="mt-2 text-cyan-300 font-semibold">
-
-            {job.company}
-
-          </p>
-
-          <p className="mt-3 text-gray-400">
-
-            {job.location}
-
-          </p>
-
-        </div>
-
-
-        <div className="px-4 py-2 rounded-full bg-green-500/20 text-green-300 font-bold">
-
-          {job.hybrid_score ? Math.round(job.hybrid_score * 100) : job.score || 0}% Match
-
-        </div>
-
-      </div>
-
-
-      <div className="mt-6 flex items-center justify-between">
-
-        <span className="text-sm text-gray-500">
-
-          Source: {job.source}
-
-        </span>
-
-
-        <a
-          href={job.apply_link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 text-black font-black hover:scale-105 transition"
-        >
-
-          Apply Now
-
-        </a>
-
-      </div>
-
+      <div className="text-2xl font-semibold text-navy">{value}</div>
+      <div className="text-sm text-body mt-1">{label}</div>
     </div>
-  ))}
-</div>
-
-    </div>
-
-
-    {/* Activity Feed */}
-
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-white">
-
-
-      <div className="flex items-center justify-between mb-8">
-
-        <div>
-
-          <h2 className="text-2xl font-black">
-
-            Activity Feed
-
-          </h2>
-
-          <p className="text-gray-400 mt-2">
-
-            Recent account activity
-
-          </p>
-
-        </div>
-
-
-        <Activity className="text-cyan-300" />
-
-      </div>
-
-
-      <div className="space-y-6">
-
-
-        <div className="border-l-2 border-cyan-400 pl-5">
-
-          <h3 className="font-bold">
-
-            Applied to AI Engineer
-
-          </h3>
-
-          <p className="text-gray-400 mt-1 text-sm">
-
-            2 hours ago
-
-          </p>
-
-        </div>
-
-
-        <div className="border-l-2 border-blue-400 pl-5">
-
-          <h3 className="font-bold">
-
-            Saved Frontend Developer
-
-          </h3>
-
-          <p className="text-gray-400 mt-1 text-sm">
-
-            Yesterday
-
-          </p>
-
-        </div>
-
-
-        <div className="border-l-2 border-purple-400 pl-5">
-
-          <h3 className="font-bold">
-
-            Profile updated successfully
-
-          </h3>
-
-          <p className="text-gray-400 mt-1 text-sm">
-
-            2 days ago
-
-          </p>
-
-        </div>
-
-      </div>
-
-
-      {/* Logout */}
-
-      <button
-        onClick={handleLogout}
-        className="w-full mt-10 bg-red-500 hover:bg-red-600 transition py-4 rounded-2xl font-bold flex items-center justify-center gap-3"
-      >
-
-        <Bookmark size={20} />
-
-        Logout
-
-      </button>
-
-    </div>
-
-  </div>
-
-</DashboardLayout>
   )
 }
 

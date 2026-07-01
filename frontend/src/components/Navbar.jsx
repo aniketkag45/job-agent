@@ -30,8 +30,10 @@ function Navbar({ isAuthenticated, onLogout }) {
           <div className="hidden md:flex items-center gap-10">
             {isAuthenticated ? (
               <>
+                <Link to="/" className={linkClass}>Home</Link>
                 <Link to="/dashboard" className={linkClass}>Dashboard</Link>
-                <Link to="/jobs" className={linkClass}>Browse Jobs</Link>
+                <Link to="/jobs" className={linkClass}>Jobs</Link>
+                <Link to="/saved-jobs" className={linkClass}>Saved</Link>
                 <Link to="/profile" className={linkClass}>Profile</Link>
                 <button onClick={handleLogout} className="text-sm font-medium text-accent-orange hover:text-orange-600 transition-colors">
                   Logout
@@ -58,10 +60,14 @@ function Navbar({ isAuthenticated, onLogout }) {
           <div className="md:hidden border-t border-border py-6 space-y-3 pb-6">
             {isAuthenticated ? (
               <>
+                <Link to="/" className="block px-4 py-3 text-body hover:text-navy rounded-xl hover:bg-cream transition-colors">Home</Link>
                 <Link to="/dashboard" className="block px-4 py-3 text-body hover:text-navy rounded-xl hover:bg-cream transition-colors">Dashboard</Link>
-                <Link to="/jobs" className="block px-4 py-3 text-body hover:text-navy rounded-xl hover:bg-cream transition-colors">Browse Jobs</Link>
+                <Link to="/jobs" className="block px-4 py-3 text-body hover:text-navy rounded-xl hover:bg-cream transition-colors">Jobs</Link>
+                <Link to="/saved-jobs" className="block px-4 py-3 text-body hover:text-navy rounded-xl hover:bg-cream transition-colors">Saved</Link>
                 <Link to="/profile" className="block px-4 py-3 text-body hover:text-navy rounded-xl hover:bg-cream transition-colors">Profile</Link>
-                <button onClick={handleLogout} className="block w-full text-left px-4 py-3 text-accent-orange rounded-xl hover:bg-cream transition-colors">Logout</button>
+                <button onClick={handleLogout} className="block w-full text-left px-4 py-3 text-accent-orange rounded-xl hover:bg-cream transition-colors">
+                  Logout
+                </button>
               </>
             ) : (
               <>
