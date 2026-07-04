@@ -4,30 +4,28 @@ import html
 import requests
 from app.services.database import job_exists
 
-
 GREENHOUSE_COMPANIES = [
-
-    # {
-    #     "slug": "openai",
-    #     "name": "OpenAI"
-    # },
-
-    {
-        "slug": "stripe",
-        "name": "Stripe"
-    },
-
-    # {
-    #     "slug": "notion",
-    #     "name": "Notion"
-    # },
-
-    {
-        "slug": "discord",
-        "name": "Discord"
-    }
+    {"slug": "stripe", "name": "Stripe"},
+    {"slug": "discord", "name": "Discord"},
+    {"slug": "airbnb", "name": "Airbnb"},
+    {"slug": "dropbox", "name": "Dropbox"},
+    {"slug": "reddit", "name": "Reddit"},
+    {"slug": "twitch", "name": "Twitch"},
+    {"slug": "instacart", "name": "Instacart"},
+    {"slug": "lyft", "name": "Lyft"},
+    {"slug": "pinterest", "name": "Pinterest"},
+    {"slug": "roblox", "name": "Roblox"},
+    {"slug": "squarespace", "name": "Squarespace"},
+    {"slug": "cloudflare", "name": "Cloudflare"},
+    {"slug": "datadog", "name": "Datadog"},
+    {"slug": "asana", "name": "Asana"},
+    {"slug": "figma", "name": "Figma"},
+    {"slug": "anduril", "name": "Anduril"},
+    {"slug": "rippling", "name": "Rippling"},
+    {"slug": "vercel", "name": "Vercel"},
+    {"slug": "notion", "name": "Notion"},
+    {"slug": "linear", "name": "Linear"},
 ]
-
 
 def fetch_greenhouse_jobs():
 

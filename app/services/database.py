@@ -94,6 +94,8 @@ class Job(Base):
     source = Column(String(100))
     score = Column(Integer,default=0)
     is_notified = Column(Boolean, default=False)
+    scraped_at = Column(String(50)) 
+    applied_at = Column(String(50)) 
     semantic_text = Column(Text)
 
 class PipelineRun(Base):
@@ -175,6 +177,21 @@ class UserResume(Base):
     is_active = Column(Boolean, default=True)
     uploaded_at = Column(String(50),default=lambda: datetime.now().isoformat())
 
+class UserApplication(Base):
+    """
+    Tracks which jobs a user has applied to.
+
+    One row per application. Linked to user and job.
+    """
+    __tablename__ = "user_applications"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
+    applied_at = Column(String(50), default=lambda: datetime.now().isoformat())
+    source = Column(String(50), default="manual")  # manual or auto
+
+
 def init_db():
      """
     Create all tables if they don't exist.
@@ -205,7 +222,8 @@ def insert_job(job):
             apply_link = job.get('apply_link'),
             source = job.get('source'),
             score = job.get('score'),
-            semantic_text = semantic_text
+            semantic_text = semantic_text,
+            scraped_at=datetime.now().isoformat(),
         )
         session.add(new_job)
         session.flush()
@@ -354,6 +372,8 @@ def _job_to_dict(job: Job) -> dict:
         "source": job.source,
         "score": job.score,
         "is_notified": job.is_notified,
+        "scraped_at": job.scraped_at,
+        "applied_at": job.applied_at,
     }
 
 def query_jobs(keyword = None, source = None,min_score = None, page = 1, page_size = 10,sort_by = "score", sort_order = "DESC",location = None):
@@ -408,7 +428,7 @@ def update_job(job_id,job_data):
     with get_session() as session:
         job = session.query(Job).filter(Job.id == job_id).first()
         if not job:
-            return Node;
+            return None
         job.title = job_data.title
         job.company = job_data.company
         job.location = job_data.location
@@ -630,6 +650,32 @@ def backfill_job_embeddings(batch_size = 50):
         embedded += len(batch)
         print(f"  Embedded {min(i + batch_size, total)}/{total} jobs")
     print(f"Backfilling complete! Total jobs embedded: {embedded}")
+
+def cleanup_old_jobs():
+    """
+    Delete jobs older than 5 days (or 15 days if applied).
+    Run after each scraper pipeline run.
+    """
+    from datetime import datetime, timedelta
+
+    five_days_ago = (datetime.now() - timedelta(days=5)).isoformat()
+    fifteen_days_ago = (datetime.now() - timedelta(days=15)).isoformat()
+
+    with get_session() as session:
+        # Delete unapplied jobs older than 5 days
+        unapplied = session.query(Job).filter(
+            Job.scraped_at < five_days_ago,
+            Job.applied_at == None
+        ).delete()
+
+        # Delete applied jobs older than 15 days
+        applied = session.query(Job).filter(
+            Job.applied_at < fifteen_days_ago,
+            Job.applied_at != None
+        ).delete()
+
+        logger.info(f"Cleanup: deleted {unapplied} old jobs + {applied} old applied jobs.")
+        return unapplied + applied
 
 # Profile Functions
 def get_or_create_user_profile(user_id:int) -> dict:

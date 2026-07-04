@@ -186,6 +186,11 @@ def run_pipeline():
                 
             )
             session.add(run)
+        
+         # Cleanup old jobs
+        from app.services.database import cleanup_old_jobs
+        deleted = cleanup_old_jobs()
+        print(f"\nCleaned up {deleted} old jobs.")
 
         print("\nPipeline Metrics Summary:\n")
 

@@ -1,6 +1,7 @@
 import os,json
 from fastapi import APIRouter, Depends, Query
-
+from datetime import datetime
+from fastapi import HTTPException
 from app.services.database import (
 
     delete_job,
@@ -51,20 +52,31 @@ def get_jobs(
 
     sort_by: str = "score",
 
-    sort_order: str = "desc"
+    sort_order: str = "desc",
+
+    filter: str = Query(default=None, description=" ' today' for last 24 hrs jobs"),
 ):
 
-    jobs = fetch_all_jobs_from_db(
+    from app.services.database import get_session, Job, _job_to_dict
+    from datetime import datetime, timedelta
 
-        page=page,
-
-        page_size=page_size,
-
-        sort_by=sort_by,
-
-        sort_order=sort_order
-    )
-
+    if filter == "today":
+        yesterday = (datetime.now() - timedelta(hours=24)).isoformat()
+        with get_session() as session:
+            total = session.query(Job).filter(
+                Job.scraped_at >= yesterday,
+                Job.applied_at == None
+            ).count()
+            all_jobs = session.query(Job).filter(
+                Job.scraped_at >= yesterday,
+                Job.applied_at == None
+            ).order_by(Job.score.desc()).offset((page - 1) * page_size).limit(page_size).all()
+            jobs = [_job_to_dict(j) for j in all_jobs]
+    else:
+        jobs = fetch_all_jobs_from_db(
+            page=page, page_size=page_size,
+            sort_by=sort_by, sort_order=sort_order
+        )
     return ApiResponse(
         success=True,
 
@@ -394,3 +406,106 @@ def delete_existing_job(job_id: int):
 
         message=f"Job with ID {job_id} deleted successfully"
     )
+
+
+@router.post("/jobs/{job_id}/apply")
+def apply_to_job(job_id: int, current_user: dict = Depends(get_current_user)):
+    """
+    Mark a job as applied by the current user.
+    Also marks the job's applied_at timestamp.
+    """
+    from app.services.database import get_session, User, Job, UserApplication
+    from app.services.email_service import send_email, is_configured
+
+    email = current_user.get("sub")
+    with get_session() as session:
+        user = session.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        job = session.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+
+        # Check if already applied
+        existing = session.query(UserApplication).filter(
+            UserApplication.user_id == user.id,
+            UserApplication.job_id == job_id
+        ).first()
+        if existing:
+            return ApiResponse(success=True, message="Already applied.")
+
+        # Create application record
+        now = datetime.now().isoformat()
+        app = UserApplication(user_id=user.id, job_id=job_id, applied_at=now, source="manual")
+        session.add(app)
+
+        # Mark job as applied
+        job.applied_at = now
+
+        # Send confirmation email (non-blocking — if configured)
+        if is_configured():
+            try:
+                subject = f"Application Submitted — {job.title} at {job.company}"
+                body = f"""
+                <div style="font-family: Inter, sans-serif; max-width: 600px; padding: 30px;">
+                    <h2 style="color: #14213D;">Application Submitted ✓</h2>
+                    <p>You've applied to:</p>
+                    <div style="background: #F8F4F1; padding: 16px; border-radius: 12px; margin: 16px 0;">
+                        <strong>{job.title}</strong><br/>
+                        {job.company} · {job.location}
+                    </div>
+                    <p style="color: #667085;">Track your applications from the dashboard.</p>
+                </div>
+                """
+                send_email(user.email, subject, body)
+            except Exception:
+                pass  # Email failure shouldn't block apply
+
+        return ApiResponse(success=True, message=f"Applied to {job.title} at {job.company}.")
+
+
+@router.get("/jobs/applied")
+def get_applied_jobs(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=50),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Get jobs the current user has applied to.
+    Returns most recently applied first.
+    """
+    from app.services.database import get_session, User, Job, UserApplication
+
+    email = current_user.get("sub")
+    with get_session() as session:
+        user = session.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        offset = (page - 1) * page_size
+        applications = (
+            session.query(UserApplication, Job)
+            .join(Job, UserApplication.job_id == Job.id)
+            .filter(UserApplication.user_id == user.id)
+            .order_by(UserApplication.applied_at.desc())
+            .offset(offset)
+            .limit(page_size)
+            .all()
+        )
+
+        results = []
+        for app, job in applications:
+            results.append({
+                "id": job.id,
+                "title": job.title,
+                "company": job.company,
+                "location": job.location,
+                "apply_link": job.apply_link,
+                "source": job.source,
+                "score": job.score,
+                "applied_at": app.applied_at,
+                "application_source": app.source,
+            })
+
+        return ApiResponse(success=True, data=results, message=f"Found {len(results)} applied jobs.")

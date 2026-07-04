@@ -12,7 +12,7 @@ scheduler.add_job(
 
     trigger="interval",
 
-    minutes=10,
+    hours=12,
 
     id="job_pipeline",
 

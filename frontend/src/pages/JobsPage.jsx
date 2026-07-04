@@ -19,6 +19,8 @@ function JobsPage() {
   const [selectedLocation] = useState("All")
   const [currentPage, setCurrentPage] = useState(1)
   const [useSemantic, setUseSemantic] = useState(false)
+  const [useToday, setUseToday] = useState(false)
+  const [appliedJobIds, setAppliedJobIds] = useState(new Set())
 
   useEffect(() => {
     async function fetchJobs() {
@@ -31,14 +33,19 @@ function JobsPage() {
           semParams.append("top_k", "10")
           if (selectedLocation !== "All") semParams.append("source", selectedLocation)
           response = await api.get(`/jobs/semantic-search?${semParams.toString()}`)
-        } else if (searchTerm.trim() || selectedLocation !== "All") {
+        }
+        else if (useToday && !searchTerm.trim()) {
+          response = await api.get(`/jobs?filter=today&page=${currentPage}&page_size=10`)
+        }
+        else if (searchTerm.trim() || selectedLocation !== "All") {
           const params = new URLSearchParams()
           params.append("page", currentPage)
           params.append("page_size", "10")
           if (searchTerm.trim()) params.append("keyword", searchTerm)
           if (selectedLocation !== "All") params.append("location", selectedLocation)
           response = await api.get(`/jobs/query?${params.toString()}`)
-        } else {
+        }
+        else {
           response = await api.get(`/jobs?page=${currentPage}&page_size=10`)
         }
         setJobs(response.data.data)
@@ -52,13 +59,21 @@ function JobsPage() {
 
     const timer = setTimeout(fetchJobs, 500)
     return () => clearTimeout(timer)
-  }, [searchTerm, selectedLocation, currentPage, useSemantic])
+  }, [searchTerm, selectedLocation, currentPage, useSemantic, useToday])
+
+  async function handleApply(jobId) {
+    try {
+      await api.post(`/jobs/${jobId}/apply`)
+      setAppliedJobIds(prev => new Set([...prev, jobId]))
+    } catch (err) {
+      console.error("Apply failed:", err)
+    }
+  }
 
   return (
     <div className="bg-cream min-h-screen">
       <div className="max-w-[1280px] mx-auto px-8 lg:px-16 py-12">
         
-        {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
           <div>
             <p className="text-xs font-medium tracking-[0.25em] uppercase text-accent-orange mb-4">Browse</p>
@@ -80,6 +95,12 @@ function JobsPage() {
               }`}>
               <Sparkles size={15} /> AI
             </button>
+            <button onClick={() => { setUseToday(!useToday); if (!useToday) setUseSemantic(false) }}
+              className={`px-4 py-3 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+                useToday ? "bg-navy text-white" : "bg-white border border-border text-body hover:text-navy"
+              }`}>
+              Today
+            </button>
           </div>
         </div>
 
@@ -95,7 +116,8 @@ function JobsPage() {
           <>
             <div className="grid lg:grid-cols-2 gap-5">
               {jobs.map(job => (
-                <JobCard key={job.id} company={job.company} role={job.title} source={job.source}
+                <JobCard key={job.id} company={job.company} role={job.title} source={job.source} jobId={job.id}
+                  onApply={() => handleApply(job.id)} applied={appliedJobIds.has(job.id)}
                   location={job.location} match={job.score || 0}
                   skills={job.searchable_text ? extractTechPills(job.searchable_text) : (job.tech_stack || [])}
                   applyLink={job.apply_link} score={job.score} />

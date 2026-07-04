@@ -2,7 +2,7 @@ import { useContext } from "react"
 import { SavedJobsContext } from "../../context/savedjobscontext"
 import { MapPin, Bookmark, BookmarkCheck, ArrowRight } from "lucide-react"
 
-function JobCard({ company, role, source, location, match, skills = [], applyLink, score }) {
+function JobCard({ company, role, source, location, match, skills = [], applyLink, score, jobId, onApply, applied }) {
   const { savedJobs, toggleSaveJob } = useContext(SavedJobsContext)
 
   const isSaved = savedJobs.some(j => j.role === role && j.company === company)
@@ -36,16 +36,22 @@ function JobCard({ company, role, source, location, match, skills = [], applyLin
         </div>
       )}
 
-      <div className="mt-5 flex items-center gap-3">
+      <div className="mt-5 flex items-center gap-2">
         <a href={applyLink} target="_blank" rel="noopener noreferrer"
-          className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-navy hover:bg-navy-light text-white text-sm font-medium rounded-full transition-colors">
+          className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-navy hover:bg-navy-light text-white text-sm font-medium rounded-full transition-colors">
           Apply Now <ArrowRight size={14} />
         </a>
+        <button onClick={onApply} disabled={applied}
+          className={`shrink-0 px-3 py-2.5 rounded-full text-xs font-medium transition-all ${
+            applied ? "bg-emerald-50 text-emerald-700 cursor-default" : "bg-white border border-border text-body hover:border-accent-orange hover:text-accent-orange"
+          }`}>
+          {applied ? "✓" : "Track"}
+        </button>
         <button onClick={() => toggleSaveJob({ company, role, source, location, match, skills, applyLink, score })}
-          className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
+          className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all shrink-0 ${
             isSaved ? "bg-accent-orange/10 border-accent-orange/30 text-accent-orange" : "border-border text-body/50 hover:text-accent-orange hover:border-accent-orange/30"
           }`}>
-          {isSaved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
+          {isSaved ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
         </button>
       </div>
     </div>
