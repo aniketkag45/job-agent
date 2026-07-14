@@ -51,8 +51,11 @@ class User(Base):
      id = Column(Integer, primary_key=True, autoincrement=True)
      username = Column(String(100), nullable=False)
      email = Column(String(255), unique=True, nullable=False)
-     hashed_password = Column(String(255), nullable=False)
+     hashed_password = Column(String(255), nullable=True)
      is_verified = Column(Boolean, default=False)
+     google_id = Column(String(255), unique=True, nullable=True)  # NEW
+     auth_provider = Column(String(50), default="local")  # NEW: local or google
+     avatar_url = Column(String(500), nullable=True)  # NEW
      created_at = Column(String(50), default=lambda: datetime.now().isoformat())
 
 class VerificationToken(Base):
@@ -489,9 +492,84 @@ def get_user_by_email(email : str):
             "username": user.username,
             "email": user.email,
             "hashed_password": user.hashed_password,
-            "is_verified": user.is_verified
+            "is_verified": user.is_verified,
+            "google_id": user.google_id,
+            "auth_provider": user.auth_provider,
+            "avatar_url": user.avatar_url
+            
+        }
+
+def get_user_by_google_id(google_id : str):
+    with get_session() as session:
+        user = session.query(User).filter(User.google_id == google_id).first()
+        if not user:
+            return None
+        return {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "hashed_password": user.hashed_password,
+            "is_verified": user.is_verified,
+            "google_id": user.google_id,
+            "auth_provider": user.auth_provider,
+            "avatar_url": user.avatar_url
+            
         }
     
+def create_google_user(email: str, username: str, google_id: str, avatar_url: str = None):
+    from sqlalchemy.exc import IntegrityError
+    with get_session() as session:
+        try:
+            user = User(
+                username = username,
+                email = email,
+                hashed_password = None,
+                is_verified = True,
+                google_id = google_id,
+                auth_provider = "google",
+                avatar_url = avatar_url
+            )
+            session.add(user)
+            session.flush()
+            result =  {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "is_verified": user.is_verified,
+                "google_id": user.google_id,
+                "auth_provider": user.auth_provider,
+                "avatar_url": user.avatar_url
+            }
+            session.commit()
+            print(f"Created Google user: {email} (ID: {user.id})")
+            return result
+        except IntegrityError:
+            session.rollback()
+            print(f"Google user {email} already exists, fetching...")
+            return get_user_by_email(email)
+        finally:
+            session.close()
+    
+def link_google_to_existing_user(user_id: int, google_id: str, avatar_url: str = None):
+    with get_session() as session:
+        user = session.query(User).filter(User.id == user_id).first()
+        if not user:
+            return None
+        user.google_id = google_id
+        user.avatar_url = avatar_url or user.avatar_url
+        user.is_verified = True
+        if not user.auth_provider or user.auth_provider == "local":
+            pass
+        session.flush()
+        return {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "is_verified": user.is_verified,
+            "google_id": user.google_id,
+            "auth_provider": user.auth_provider,
+            "avatar_url": user.avatar_url
+        }
 
 def save_verification_token(user_id: int, token: str):
     with get_session() as session:

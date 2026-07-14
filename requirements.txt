@@ -10,6 +10,7 @@ attrs==26.1.0
 bcrypt==4.0.1
 beautifulsoup4==4.14.3
 build==1.5.0
+cachetools==5.5.2
 certifi==2026.4.22
 charset-normalizer==3.4.7
 chromadb==1.5.9
@@ -27,6 +28,7 @@ filelock==3.29.0
 flatbuffers==25.12.19
 frozenlist==1.8.0
 fsspec==2026.4.0
+google-auth==2.40.2
 googleapis-common-protos==1.75.0
 greenlet==3.5.0
 grpcio==1.80.0
@@ -71,6 +73,7 @@ propcache==0.5.2
 protobuf==6.33.6
 psycopg2-binary==2.9.12
 pyasn1==0.6.3
+pyasn1_modules==0.4.2
 pybase64==1.4.3
 pydantic==2.13.4
 pydantic-settings==2.14.1

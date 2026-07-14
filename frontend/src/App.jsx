@@ -9,6 +9,7 @@ import JobsPage from "./pages/JobsPage"
 import SavedJobsPage from "./pages/SavedJobsPage"
 import VerifyEmailPage from "./pages/VerifyEmailPage"
 import ProfilePage from "./pages/ProfilePage"
+import GoogleCallbackPage from "./pages/GoogleCallbackPage"
 import Navbar from "./components/Navbar"
 import { AuthContext } from "./context/authContext"
 
@@ -24,6 +25,7 @@ function App() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
           <Route path="/dashboard" element={
             <ProtectedRoute><DashboardPage /></ProtectedRoute>
           } />

@@ -1,12 +1,10 @@
-
-
 import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
 import { ArrowRight, Loader2, Eye, EyeOff } from "lucide-react"
 import api from "../api/axios"
+import GoogleLoginButton from "../components/auth/GoogleLoginButton"
 
 function SignupPage() {
-  const navigate = useNavigate()
   const [formData, setFormData] = useState({ username: "", email: "", password: "" })
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -44,17 +42,13 @@ function SignupPage() {
   return (
     <section className="min-h-screen bg-cream flex items-center justify-center px-6 py-20">
       <div className="max-w-md w-full">
-        
         <div className="text-center mb-12">
           <p className="text-xs font-medium tracking-[0.25em] uppercase text-accent-orange mb-6">Get Started</p>
           <h1 className="font-serif text-4xl text-navy-light">Create your account</h1>
-          <p className="mt-4 text-body leading-relaxed">
-            Start your journey with AI-powered job matching.
-          </p>
+          <p className="mt-4 text-body leading-relaxed">Start your journey with AI-powered job matching.</p>
         </div>
 
         <div className="bg-white rounded-3xl border border-border p-8 shadow-[0_10px_40px_rgba(0,0,0,.03)]">
-          
           {success ? (
             <div className="text-center py-8">
               <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4">
@@ -104,6 +98,15 @@ function SignupPage() {
                   {!loading && <ArrowRight size={18} />}
                 </button>
               </form>
+
+              <div className="my-8 flex items-center gap-4">
+                <div className="h-[1px] flex-1 bg-border"></div>
+                <span className="text-xs tracking-widest uppercase text-body/50">or</span>
+                <div className="h-[1px] flex-1 bg-border"></div>
+              </div>
+
+              <GoogleLoginButton />
+
               <p className="mt-8 text-center text-body text-sm">
                 Already have an account?{" "}
                 <Link to="/login" className="text-accent-orange hover:text-orange-600 font-medium transition-colors">Sign in</Link>

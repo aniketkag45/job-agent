@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { ArrowRight, Loader2, Eye, EyeOff } from "lucide-react"
 import api from "../api/axios"
 import { AuthContext } from "../context/authContext"
+import GoogleLoginButton from "../components/auth/GoogleLoginButton"
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -32,7 +33,12 @@ function LoginPage() {
       login(response.data.access_token)
       navigate("/dashboard")
     } catch (err) {
-      setError("Invalid credentials. Please try again.")
+      const detail = err.response?.data?.detail || ""
+      if (detail.includes("Google")) {
+        setError(detail)
+      } else {
+        setError("Invalid credentials. Please try again.")
+      }
     } finally {
       setLoading(false)
     }
@@ -41,33 +47,24 @@ function LoginPage() {
   return (
     <section className="min-h-screen bg-cream flex items-center justify-center px-6 py-20">
       <div className="max-w-md w-full">
-        
-        {/* Heading */}
         <div className="text-center mb-12">
           <p className="text-xs font-medium tracking-[0.25em] uppercase text-accent-orange mb-6">Welcome Back</p>
           <h1 className="font-serif text-4xl text-navy-light">Sign in to your account</h1>
-          <p className="mt-4 text-body leading-relaxed">
-            Continue your journey with AI-powered job matching.
-          </p>
+          <p className="mt-4 text-body leading-relaxed">Continue your journey with AI-powered job matching.</p>
         </div>
 
-        {/* Form Card */}
         <div className="bg-white rounded-3xl border border-border p-8 shadow-[0_10px_40px_rgba(0,0,0,.03)]">
-          
           {error && (
             <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-sm">{error}</div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-navy mb-2">Email</label>
               <input type="text" name="username" value={formData.username} onChange={handleChange}
                 placeholder="you@example.com"
                 className="w-full px-5 py-3.5 rounded-2xl border border-border text-navy placeholder:text-body/50 focus:outline-none focus:border-accent-orange focus:ring-2 focus:ring-accent-orange/10 transition-all" />
             </div>
-
-            {/* Password */}
             <div>
               <label className="block text-sm font-medium text-navy mb-2">Password</label>
               <div className="relative">
@@ -80,8 +77,6 @@ function LoginPage() {
                 </button>
               </div>
             </div>
-
-            {/* Submit */}
             <button type="submit" disabled={loading}
               className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-navy hover:bg-navy-light text-white font-medium rounded-full transition-all shadow-[0_10px_30px_rgba(0,0,0,.08)] disabled:opacity-50">
               {loading ? <Loader2 className="animate-spin" size={18} /> : null}
@@ -89,6 +84,14 @@ function LoginPage() {
               {!loading && <ArrowRight size={18} />}
             </button>
           </form>
+
+          <div className="my-8 flex items-center gap-4">
+            <div className="h-[1px] flex-1 bg-border"></div>
+            <span className="text-xs tracking-widest uppercase text-body/50">or</span>
+            <div className="h-[1px] flex-1 bg-border"></div>
+          </div>
+
+          <GoogleLoginButton />
 
           <p className="mt-8 text-center text-body text-sm">
             Don't have an account?{" "}
