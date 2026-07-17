@@ -11,6 +11,7 @@ from app.api.routes.resume import router as resume_router
 from app.api.routes.profile import router as profile_router
 from app.api.routes.notifications import router as notifications_router
 from apscheduler.schedulers.background import BackgroundScheduler
+from app.api.routes.admin import router as admin_router
 
 scheduler = BackgroundScheduler()
 
@@ -55,3 +56,4 @@ app.include_router(agent_overview_router)
 app.include_router(resume_router)
 app.include_router(profile_router)
 app.include_router(notifications_router)
+app.include_router(admin_router)
