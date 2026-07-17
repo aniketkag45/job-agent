@@ -82,16 +82,11 @@ function Footer() {
 
         </div>
 
-        <div className="mt-12 pt-6 border-t border-border flex flex-col sm:flex-row justify-between gap-4">
-
+          <div className="mt-12 pt-6 border-t border-border flex flex-col sm:flex-row justify-between gap-4">
           <p className="text-sm text-body">
-            © 2026 JobAgent
+            © {new Date().getFullYear()} JobAgent •AI Platform
           </p>
-
-          <p className="text-sm text-body">
-            Built with AI • India
-          </p>
-
+          
         </div>
 
       </div>
